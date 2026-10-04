@@ -11,7 +11,7 @@ export default async function RequestsPage() {
   const requests = await db.purchaseRequest.findMany({
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     take: 100,
-    include: { feature: { select: { title: true, price: true } }, site: { select: { id: true, domain: true, client: { select: { name: true } } } } },
+    include: { feature: { select: { title: true, price: true } }, package: { select: { name: true, price: true } }, site: { select: { id: true, domain: true, client: { select: { name: true } } } } },
   });
   return (
     <div className="space-y-4">
@@ -21,7 +21,7 @@ export default async function RequestsPage() {
         <div key={request.id} className="card space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="font-bold">{request.feature.title} · {formatToman(Number(request.feature.price))}</p>
+              <p className="font-bold">{request.feature ? request.feature.title : `بستهٔ ${request.package?.name ?? ""}`} · {formatToman(Number((request.feature ?? request.package)?.price ?? 0))}</p>
               <Link href={`/sites/${request.site.id}`} dir="ltr" className="text-sm text-brand">{request.site.domain}</Link>
               <span className="text-sm text-slate-500"> · {request.site.client.name}</span>
             </div>

@@ -48,7 +48,8 @@ model Package {
   price     Decimal  @default(0) @db.Decimal(14, 0)
   createdAt DateTime @default(now())
 
-  features PackageFeature[]
+  features         PackageFeature[]
+  purchaseRequests PurchaseRequest[]
 }
 
 model PackageFeature {
@@ -129,15 +130,18 @@ model OwnerSettings {
 model PurchaseRequest {
   id           String         @id @default(cuid())
   siteId       String
-  featureKey   String         @db.VarChar(64)
+  // Exactly one of featureKey / packageId is set.
+  featureKey   String?        @db.VarChar(64)
+  packageId    String?
   status       PurchaseStatus @default(PENDING)
   trackingCode String         @db.VarChar(60)
   note         String?        @db.VarChar(500)
   createdAt    DateTime       @default(now())
   resolvedAt   DateTime?
 
-  site    Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  feature Feature @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+  site    Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  feature Feature? @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+  package Package? @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
   @@index([siteId, status])
   @@index([status, createdAt])

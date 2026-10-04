@@ -25,10 +25,11 @@ export async function POST(request: Request) {
     { siteId: site.id, domain: site.domain, status, features: status === "ACTIVE" ? site.features.map((f) => f.featureKey) : [], iat, exp: iat + env.LICENSE_TOKEN_DAYS * 86400 },
     env.LICENSE_PRIVATE_KEY,
   );
-  const [catalog, owner, pending] = await Promise.all([
+  const [catalog, owner, pending, packages] = await Promise.all([
     db.feature.findMany({ orderBy: { sortOrder: "asc" }, select: { key: true, title: true, price: true } }),
     db.ownerSettings.findUnique({ where: { id: "main" }, select: { holderName: true, cardNumber: true, sheba: true, bankName: true, contactPhone: true, note: true } }),
-    db.purchaseRequest.findMany({ where: { siteId: site.id, status: "PENDING" }, select: { featureKey: true } }),
+    db.purchaseRequest.findMany({ where: { siteId: site.id, status: "PENDING" }, select: { featureKey: true, packageId: true } }),
+    db.package.findMany({ orderBy: { price: "asc" }, select: { id: true, name: true, price: true, features: { select: { featureKey: true } } } }),
   ]);
   await db.site.update({ where: { id: site.id }, data: { lastSeenAt: new Date() }, select: { id: true } });
   // Display-only extras for the customer's purchase screen; the signed token alone grants features.
@@ -36,6 +37,8 @@ export async function POST(request: Request) {
     token,
     catalog: catalog.map((f) => ({ key: f.key, title: f.title, price: Number(f.price) })),
     owner,
-    pending: pending.map((p) => p.featureKey),
+    pending: pending.flatMap((p) => (p.featureKey ? [p.featureKey] : [])),
+    pendingPackages: pending.flatMap((p) => (p.packageId ? [p.packageId] : [])),
+    packages: packages.map((p) => ({ id: p.id, name: p.name, price: Number(p.price), featureKeys: p.features.map((f) => f.featureKey) })),
   });
 }

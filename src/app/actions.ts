@@ -232,14 +232,16 @@ export async function saveOwnerSettingsAction(_: FormState, formData: FormData):
 
 export async function resolvePurchaseAction(requestId: string, decision: "APPROVED" | "REJECTED") {
   await requireOwnerAction();
-  const request = await db.purchaseRequest.findUnique({ where: { id: requestId }, include: { feature: { select: { title: true } } } });
+  const request = await db.purchaseRequest.findUnique({ where: { id: requestId }, include: { feature: { select: { title: true } }, package: { select: { name: true, features: { select: { featureKey: true } } } } } });
   if (!request || request.status !== "PENDING") return;
+  const grants = request.featureKey ? [request.featureKey] : (request.package?.features.map((f) => f.featureKey) ?? []);
+  const title = request.feature?.title ?? (request.package ? `بستهٔ ${request.package.name}` : "قابلیت");
   await db.$transaction([
     db.purchaseRequest.update({ where: { id: requestId }, data: { status: decision, resolvedAt: new Date() }, select: { id: true } }),
     ...(decision === "APPROVED"
-      ? [db.siteFeature.upsert({ where: { siteId_featureKey: { siteId: request.siteId, featureKey: request.featureKey } }, create: { siteId: request.siteId, featureKey: request.featureKey }, update: {}, select: { siteId: true } })]
+      ? grants.map((featureKey) => db.siteFeature.upsert({ where: { siteId_featureKey: { siteId: request.siteId, featureKey } }, create: { siteId: request.siteId, featureKey }, update: {}, select: { siteId: true } }))
       : []),
-    db.licenseEvent.create({ data: { siteId: request.siteId, type: "PURCHASE_RESOLVED", message: `خرید «${request.feature.title}» ${decision === "APPROVED" ? "تأیید و فعال شد" : "رد شد"}.` } }),
+    db.licenseEvent.create({ data: { siteId: request.siteId, type: "PURCHASE_RESOLVED", message: `خرید «${title}» ${decision === "APPROVED" ? "تأیید و فعال شد" : "رد شد"}.` } }),
   ]);
   revalidatePath("/requests");
   revalidatePath("/");
