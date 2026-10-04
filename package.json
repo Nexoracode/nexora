@@ -1,0 +1,40 @@
+{
+  "name": "nexoraweb",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "keys:generate": "tsx scripts/generate-keys.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-mariadb": "7.9.1",
+    "@prisma/client": "7.9.1",
+    "jose": "^6.1.2",
+    "lucide-react": "^0.525.0",
+    "mariadb": "^3.4.5",
+    "next": "^16.3.5",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.0.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "dotenv": "^17.2.0",
+    "prisma": "7.9.1",
+    "tailwindcss": "^4",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}

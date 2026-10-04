@@ -1,0 +1,21 @@
+/** Default feature catalog. Keys must match LICENSE_FEATURES in the store project. Prices start at 0 and are set in the panel. */
+export const defaultFeatures = [
+  { key: "wallet", title: "کیف پول", group: "فروش و پرداخت" },
+  { key: "card-to-card", title: "پرداخت کارت‌به‌کارت", group: "فروش و پرداخت" },
+  { key: "online-payment", title: "درگاه پرداخت آنلاین", group: "فروش و پرداخت" },
+  { key: "promotions", title: "تخفیف و پروموشن", group: "فروش و پرداخت" },
+  { key: "returns", title: "مرجوعی", group: "فروش و پرداخت" },
+  { key: "inventory", title: "انبار و رسید کالا", group: "کاتالوگ" },
+  { key: "product-import", title: "ورود گروهی محصول", group: "کاتالوگ" },
+  { key: "compare", title: "مقایسه محصولات", group: "کاتالوگ" },
+  { key: "reviews", title: "دیدگاه و امتیاز محصول", group: "کاتالوگ" },
+  { key: "gold", title: "صنف طلا (نرخ لحظه‌ای)", group: "کاتالوگ" },
+  { key: "blog", title: "وبلاگ و دیدگاه مقالات", group: "محتوا و سئو" },
+  { key: "page-builder", title: "صفحه‌ساز", group: "محتوا و سئو" },
+  { key: "seo-tools", title: "ابزار سئو", group: "محتوا و سئو" },
+  { key: "tickets", title: "تیکت پشتیبانی", group: "مشتریان" },
+  { key: "referral", title: "معرفی دوستان", group: "مشتریان" },
+  { key: "sms-campaigns", title: "پیامک و اعلان‌ها", group: "مشتریان" },
+  { key: "reports", title: "گزارش‌ها", group: "مدیریت" },
+  { key: "audit-log", title: "تاریخچه فعالیت‌ها", group: "مدیریت" },
+] as const;

@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Vazirmatn", Tahoma, system-ui, sans-serif;
+  --color-brand: #4f46e5;
+  --color-brand-dark: #4338ca;
+}
+
+html {
+  background: #f6f7fb;
+  color: #1f2330;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+.input {
+  width: 100%;
+  border-radius: 0.6rem;
+  border: 1px solid #d4d8e2;
+  background: #fff;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--color-brand);
+}
+
+.input[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+.card {
+  border-radius: 0.9rem;
+  border: 1px solid #e3e6ee;
+  background: #fff;
+  padding: 1.1rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.6rem;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-brand);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-brand-dark);
+}
+
+.btn-ghost {
+  border: 1px solid #d4d8e2;
+  background: #fff;
+}
+
+.btn-danger {
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b91c1c;
+}

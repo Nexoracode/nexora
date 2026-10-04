@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum SiteStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum LicenseEventType {
+  SITE_CREATED
+  FEATURES_CHANGED
+  STATUS_CHANGED
+  KEY_ROTATED
+  CHECK_REJECTED
+}
+
+// Catalog of sellable capabilities. `key` matches LICENSE_FEATURES in the store project.
+model Feature {
+  key       String   @id @db.VarChar(64)
+  title     String   @db.VarChar(120)
+  group     String   @db.VarChar(80)
+  price     Decimal  @default(0) @db.Decimal(14, 0)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  siteFeatures    SiteFeature[]
+  packageFeatures PackageFeature[]
+}
+
+model Package {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(120)
+  price     Decimal  @default(0) @db.Decimal(14, 0)
+  createdAt DateTime @default(now())
+
+  features PackageFeature[]
+}
+
+model PackageFeature {
+  packageId  String
+  featureKey String @db.VarChar(64)
+
+  package Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+
+  @@id([packageId, featureKey])
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String   @unique @db.VarChar(120)
+  phone     String?  @db.VarChar(20)
+  createdAt DateTime @default(now())
+
+  sites Site[]
+}
+
+model Site {
+  id            String     @id @default(cuid())
+  clientId      String
+  domain        String     @unique @db.VarChar(191)
+  licenseKeyHash String    @unique @db.VarChar(64)
+  keyPrefix     String     @db.VarChar(16)
+  status        SiteStatus @default(ACTIVE)
+  contractPrice Decimal    @default(0) @db.Decimal(14, 0)
+  expiresAt     DateTime?
+  notes         String?    @db.VarChar(1000)
+  lastSeenAt    DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  client   Client         @relation(fields: [clientId], references: [id])
+  features SiteFeature[]
+  events   LicenseEvent[]
+
+  @@index([clientId])
+}
+
+model SiteFeature {
+  siteId     String
+  featureKey String @db.VarChar(64)
+
+  site    Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+
+  @@id([siteId, featureKey])
+}
+
+model LicenseEvent {
+  id        String           @id @default(cuid())
+  siteId    String?
+  type      LicenseEventType
+  message   String           @db.VarChar(255)
+  createdAt DateTime         @default(now())
+
+  site Site? @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, createdAt])
+}
