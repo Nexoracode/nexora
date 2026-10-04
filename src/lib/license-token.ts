@@ -12,7 +12,7 @@ export type LicenseTokenPayload = {
 /** Format: `base64url(JSON payload).base64url(Ed25519 signature over the payload part)`. */
 export function signLicenseToken(payload: LicenseTokenPayload, privateKeyPem: string) {
   const part = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const key = createPrivateKey(privateKeyPem.replace(/\n/g, "\n"));
+  const key = createPrivateKey(privateKeyPem.replace(/\\n/g, "\n"));
   return `${part}.${sign(null, Buffer.from(part), key).toString("base64url")}`;
 }
 
