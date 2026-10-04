@@ -12,12 +12,20 @@ enum SiteStatus {
   SUSPENDED
 }
 
+enum PurchaseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum LicenseEventType {
   SITE_CREATED
   FEATURES_CHANGED
   STATUS_CHANGED
   KEY_ROTATED
   CHECK_REJECTED
+  PURCHASE_REQUESTED
+  PURCHASE_RESOLVED
 }
 
 // Catalog of sellable capabilities. `key` matches LICENSE_FEATURES in the store project.
@@ -29,8 +37,9 @@ model Feature {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
-  siteFeatures    SiteFeature[]
-  packageFeatures PackageFeature[]
+  siteFeatures     SiteFeature[]
+  packageFeatures  PackageFeature[]
+  purchaseRequests PurchaseRequest[]
 }
 
 model Package {
@@ -76,8 +85,9 @@ model Site {
   updatedAt     DateTime   @updatedAt
 
   client   Client         @relation(fields: [clientId], references: [id])
-  features SiteFeature[]
-  events   LicenseEvent[]
+  features         SiteFeature[]
+  events           LicenseEvent[]
+  purchaseRequests PurchaseRequest[]
 
   @@index([clientId])
 }
@@ -102,4 +112,33 @@ model LicenseEvent {
   site Site? @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   @@index([siteId, createdAt])
+}
+
+// Your fixed payment details, shown to a customer who wants to buy a locked feature.
+model OwnerSettings {
+  id           String  @id @default("main")
+  holderName   String? @db.VarChar(120)
+  cardNumber   String? @db.VarChar(16)
+  sheba        String? @db.VarChar(26)
+  bankName     String? @db.VarChar(60)
+  contactPhone String? @db.VarChar(11)
+  note         String? @db.VarChar(500)
+}
+
+// A customer site asked to unlock a feature after paying; approving it adds the feature to the site.
+model PurchaseRequest {
+  id           String         @id @default(cuid())
+  siteId       String
+  featureKey   String         @db.VarChar(64)
+  status       PurchaseStatus @default(PENDING)
+  trackingCode String         @db.VarChar(60)
+  note         String?        @db.VarChar(500)
+  createdAt    DateTime       @default(now())
+  resolvedAt   DateTime?
+
+  site    Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+
+  @@index([siteId, status])
+  @@index([status, createdAt])
 }

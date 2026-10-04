@@ -197,3 +197,50 @@ export async function deletePackageAction(packageId: string) {
   await db.package.delete({ where: { id: packageId }, select: { id: true } });
   revalidatePath("/packages");
 }
+
+const digitsOnly = (value: unknown) => normalizeDigits(String(value ?? "")).replace(/[\s-]/g, "");
+
+const ownerSchema = z.object({
+  holderName: z.string().trim().max(120, "نام صاحب حساب حداکثر ۱۲۰ نویسه است."),
+  cardNumber: z.string().regex(/^(\d{16})?$/, "شماره کارت باید دقیقاً ۱۶ رقم باشد."),
+  sheba: z.string().regex(/^(IR\d{24})?$/, "شبا باید با IR شروع شود و ۲۴ رقم داشته باشد."),
+  bankName: z.string().trim().max(60, "نام بانک حداکثر ۶۰ نویسه است."),
+  contactPhone: z.string().regex(/^(09\d{9})?$/, "شماره تماس باید به‌صورت 09xxxxxxxxx و ۱۱ رقم باشد."),
+  note: z.string().trim().max(500, "توضیح حداکثر ۵۰۰ نویسه است."),
+});
+
+export async function saveOwnerSettingsAction(_: FormState, formData: FormData): Promise<FormState> {
+  await requireOwnerAction();
+  const parsed = ownerSchema.safeParse({
+    holderName: formData.get("holderName") ?? "",
+    cardNumber: digitsOnly(formData.get("cardNumber")),
+    sheba: digitsOnly(formData.get("sheba")).toUpperCase(),
+    bankName: formData.get("bankName") ?? "",
+    contactPhone: digitsOnly(formData.get("contactPhone")),
+    note: formData.get("note") ?? "",
+  });
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
+    return formError(fieldErrors);
+  }
+  const data = Object.fromEntries(Object.entries(parsed.data).map(([key, value]) => [key, value || null]));
+  await db.ownerSettings.upsert({ where: { id: "main" }, create: { id: "main", ...data }, update: data });
+  revalidatePath("/settings");
+  return { saved: true };
+}
+
+export async function resolvePurchaseAction(requestId: string, decision: "APPROVED" | "REJECTED") {
+  await requireOwnerAction();
+  const request = await db.purchaseRequest.findUnique({ where: { id: requestId }, include: { feature: { select: { title: true } } } });
+  if (!request || request.status !== "PENDING") return;
+  await db.$transaction([
+    db.purchaseRequest.update({ where: { id: requestId }, data: { status: decision, resolvedAt: new Date() }, select: { id: true } }),
+    ...(decision === "APPROVED"
+      ? [db.siteFeature.upsert({ where: { siteId_featureKey: { siteId: request.siteId, featureKey: request.featureKey } }, create: { siteId: request.siteId, featureKey: request.featureKey }, update: {}, select: { siteId: true } })]
+      : []),
+    db.licenseEvent.create({ data: { siteId: request.siteId, type: "PURCHASE_RESOLVED", message: `خرید «${request.feature.title}» ${decision === "APPROVED" ? "تأیید و فعال شد" : "رد شد"}.` } }),
+  ]);
+  revalidatePath("/requests");
+  revalidatePath("/");
+}
