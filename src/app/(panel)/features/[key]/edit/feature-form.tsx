@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { saveFeatureAction } from "@/app/actions";
 import { PriceInput } from "@/components/price-input";
+import { SuggestInput } from "@/components/suggest-input";
 import { Field, SubmitButton } from "@/components/ui";
 
 type Defaults = { title: string; group: string; description: string; price: number; isActive: boolean };
@@ -25,8 +26,7 @@ export function FeatureForm({ featureKey, groups, defaults }: { featureKey: stri
           <input id="title" name="title" defaultValue={defaults.title} maxLength={LIMITS.title} className="input" {...a11y("title")} />
         </Field>
         <Field label="گروه" htmlFor="group" error={errors.group} hint="برای دسته‌بندی در فهرست‌ها">
-          <input id="group" name="group" list="feature-groups" defaultValue={defaults.group} maxLength={LIMITS.group} className="input" {...a11y("group")} />
-          <datalist id="feature-groups">{groups.map((group) => <option key={group} value={group} />)}</datalist>
+          <SuggestInput id="group" name="group" suggestions={groups} defaultValue={defaults.group} maxLength={LIMITS.group} {...a11y("group")} />
         </Field>
         <Field label="قیمت" htmlFor="price" error={errors.price}>
           <PriceInput id="price" name="price" defaultValue={defaults.price} {...a11y("price")} />

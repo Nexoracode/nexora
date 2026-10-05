@@ -7,6 +7,7 @@ import { formatToman, normalizeDigits } from "@/lib/format";
 import { FeatureGrid, PackagePicker, SelectionSummary, type AppliedPackage, type FeatureOption, type PackageOption } from "./feature-grid";
 import { JalaliDateField } from "./jalali-date-field";
 import { Select } from "./select";
+import { SuggestInput } from "./suggest-input";
 import { PriceInput } from "./price-input";
 import { KeyBox } from "./key-box";
 import { TabPanel, Tabs } from "./tabs";
@@ -95,8 +96,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
               <input id="domain" name="domain" dir="ltr" defaultValue={site.domain} maxLength={LIMITS.domain} className="input text-left" {...invalid("domain")} />
             </Field>
             <Field label="نام مشتری" htmlFor="clientName" error={errors.clientName}>
-              <input id="clientName" name="clientName" list="client-names" defaultValue={site.clientName} maxLength={LIMITS.clientName} className="input" {...invalid("clientName")} />
-              <datalist id="client-names">{clientNames.map((name) => <option key={name} value={name} />)}</datalist>
+              <SuggestInput id="clientName" name="clientName" suggestions={clientNames} defaultValue={site.clientName} maxLength={LIMITS.clientName} {...invalid("clientName")} />
             </Field>
             <Field label="شماره تماس" htmlFor="clientPhone" error={errors.clientPhone}>
               <input id="clientPhone" name="clientPhone" dir="ltr" inputMode="tel" defaultValue={site.clientPhone} maxLength={LIMITS.clientPhone} className="input text-left" {...invalid("clientPhone")} />
