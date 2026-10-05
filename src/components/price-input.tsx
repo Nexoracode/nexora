@@ -38,9 +38,9 @@ export function PriceInput({ value, defaultValue = "", onValueChange, maxDigits 
           setInner(next);
           onValueChange?.(next);
         }}
-        className={`input !pe-16 text-left ${className}`.trim()}
+        className={`input !pl-16 text-right ${className}`.trim()}
       />
-      <span aria-hidden className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">تومان</span>
+      <span aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">تومان</span>
     </div>
   );
 }
