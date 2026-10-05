@@ -208,18 +208,28 @@ const packageSchema = z.object({ name: z.string().trim().min(1, "نام بسته
 export async function savePackageAction(packageId: string | null, _: FormState, formData: FormData): Promise<FormState> {
   await requireOwnerAction();
   const parsed = packageSchema.safeParse({ name: formData.get("name"), price: formData.get("price") });
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
+    return formError(fieldErrors);
+  }
   const features = (await validFeatureKeys(formData.getAll("features").map(String))).map((featureKey) => ({ featureKey }));
-  if (packageId) await db.package.update({ where: { id: packageId }, data: { ...parsed.data, features: { deleteMany: {}, create: features } }, select: { id: true } });
-  else await db.package.create({ data: { ...parsed.data, features: { create: features } }, select: { id: true } });
+  if (packageId) {
+    await db.package.update({ where: { id: packageId }, data: { ...parsed.data, features: { deleteMany: {}, create: features } }, select: { id: true } });
+    revalidatePath("/packages");
+    revalidatePath(`/packages/${packageId}`);
+    return { saved: true };
+  }
+  await db.package.create({ data: { ...parsed.data, features: { create: features } }, select: { id: true } });
   revalidatePath("/packages");
-  return { saved: true };
+  redirect("/packages");
 }
 
 export async function deletePackageAction(packageId: string) {
   await requireOwnerAction();
   await db.package.delete({ where: { id: packageId }, select: { id: true } });
   revalidatePath("/packages");
+  redirect("/packages");
 }
 
 const digitsOnly = (value: unknown) => normalizeDigits(String(value ?? "")).replace(/[\s-]/g, "");
