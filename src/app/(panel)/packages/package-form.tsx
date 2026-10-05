@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { savePackageAction } from "@/app/actions";
 import { FeatureGrid, SelectionSummary, type FeatureOption, type PackageOption } from "@/components/feature-grid";
 import { PriceInput } from "@/components/price-input";
@@ -16,6 +16,7 @@ export function PackageForm({ pkg, features }: { pkg: PackageOption | null; feat
   const [state, action] = useActionState(savePackageAction.bind(null, pkg?.id ?? null), {});
   useResultToast(state, "بسته ذخیره شد.");
   const [selected, setSelected] = useState(() => new Set(pkg?.featureKeys ?? []));
+  const baseline = useMemo(() => new Set(pkg?.featureKeys ?? []), [pkg]);
   const errors = state.fieldErrors ?? {};
   const a11y = (name: string) => ({ "aria-invalid": errors[name] ? true : undefined, "aria-describedby": `${name}-msg` }) as const;
 
@@ -32,7 +33,7 @@ export function PackageForm({ pkg, features }: { pkg: PackageOption | null; feat
 
       {/* Same layout as the features tab of a site: the live selection card docks on the right. */}
       <div className="grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]">
-        <SelectionSummary features={features} selected={selected} applied={null} />
+        <SelectionSummary features={features} selected={selected} baseline={baseline} currentPrice={pkg ? pkg.price : null} applied={null} />
         <section className="card space-y-3 @container">
           <h2 className="m-0 font-bold">قابلیت‌های بسته</h2>
           <FeatureGrid features={features} selected={selected} onChange={setSelected} />

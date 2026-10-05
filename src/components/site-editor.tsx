@@ -50,6 +50,8 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
   const [state, formAction, saving] = useActionState(action, {});
   useResultToast(state, "تغییرات ذخیره شد.");
   const [selected, setSelected] = useState(() => new Set(site.featureKeys));
+  // The saved selection: the card measures what was added or removed against it.
+  const baseline = useMemo(() => new Set(site.featureKeys), [site.featureKeys]);
   const [status, setStatus] = useState<SiteDefaults["status"]>(site.status);
   const [price, setPrice] = useState(String(site.contractPrice || ""));
   // How things were before the first package was applied, so one click can bring them back.
@@ -133,7 +135,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
         <TabPanel id="features" value={tab} idPrefix={idPrefix}>
           <div className="grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]">
             {/* First in the markup, so it docks on the right in this right-to-left layout. */}
-            <SelectionSummary features={features} selected={selected} applied={applied} />
+            <SelectionSummary features={features} selected={selected} baseline={baseline} currentPrice={mode === "edit" ? site.contractPrice : null} applied={applied} />
           <section className="card @container space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="m-0 font-bold">قابلیت‌های فعال</h2>

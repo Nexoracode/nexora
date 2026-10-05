@@ -150,21 +150,46 @@ export function PackagePicker({ packages, selected, onApply, onAppliedChange, on
 }
 
 /**
- * Docked card that always shows what is ticked right now, live. After a package was applied it
- * also marks what that package added and lists what it took away.
+ * Docked card that always shows what is ticked right now, live, measured against what was saved:
+ * the current (saved) price, what the added and removed features change by, and the total of the
+ * features that are selected. Added features carry a "new" tag; removed ones are listed struck out.
+ * `baseline` is the saved selection and `currentPrice` the saved price (null when nothing is saved yet).
  */
-export function SelectionSummary({ features, selected, applied }: { features: FeatureOption[]; selected: ReadonlySet<string>; applied: AppliedPackage | null }) {
+export function SelectionSummary({ features, selected, baseline, currentPrice, applied }: { features: FeatureOption[]; selected: ReadonlySet<string>; baseline: ReadonlySet<string>; currentPrice: number | null; applied: AppliedPackage | null }) {
   const chosen = features.filter((feature) => selected.has(feature.key));
-  const total = chosen.reduce((sum, feature) => sum + feature.price, 0);
-  const added = new Set(applied?.added);
-  const removed = features.filter((feature) => applied?.removed.includes(feature.key) && !selected.has(feature.key));
+  const addedFeatures = chosen.filter((feature) => !baseline.has(feature.key));
+  const removedFeatures = features.filter((feature) => baseline.has(feature.key) && !selected.has(feature.key));
+  const sum = (list: FeatureOption[]) => list.reduce((total, feature) => total + feature.price, 0);
+  const added = sum(addedFeatures);
+  const removed = sum(removedFeatures);
+  const addedKeys = new Set(addedFeatures.map((feature) => feature.key));
+
+  const rows: Array<{ label: string; value: string; tone?: string }> = [
+    ...(currentPrice !== null ? [{ label: "قیمت فعلی", value: formatToman(currentPrice) }] : []),
+    ...(added > 0 ? [{ label: "افزوده‌شده", value: `+ ${formatToman(added)}`, tone: "text-green-700" }] : []),
+    ...(removed > 0 ? [{ label: "برداشته‌شده", value: `− ${formatToman(removed)}`, tone: "text-red-600" }] : []),
+  ];
 
   return (
     <aside aria-label="قابلیت‌های انتخاب‌شده" className="self-start rounded-2xl border border-slate-200 bg-white lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
       <header className="border-b border-slate-100 p-4">
         <h3 className="m-0 text-sm font-bold">{applied ? `بستهٔ ${applied.pkg.name}` : "انتخاب فعلی"}</h3>
-        <p className="m-0 mt-1 text-xs text-slate-500">{chosen.length.toLocaleString("fa-IR")} قابلیت · {formatToman(total)}</p>
+        <p className="m-0 mt-1 text-xs text-slate-500">{chosen.length.toLocaleString("fa-IR")} قابلیت انتخاب شده</p>
       </header>
+
+      <dl className="m-0 space-y-2 border-b border-slate-100 p-4 text-sm">
+        {rows.map((row) => (
+          <div key={row.label} className="flex items-center justify-between gap-3">
+            <dt className="text-slate-500">{row.label}</dt>
+            <dd className={`m-0 font-medium ${row.tone ?? ""}`}>{row.value}</dd>
+          </div>
+        ))}
+        <div className={`flex items-center justify-between gap-3 ${rows.length ? "border-t border-slate-100 pt-2" : ""}`}>
+          <dt className="font-bold">جمع قابلیت‌های انتخاب‌شده</dt>
+          <dd className="m-0 font-bold">{formatToman(sum(chosen))}</dd>
+        </div>
+      </dl>
+
       <div className="space-y-4 p-4">
         {chosen.length === 0 ? (
           <p className="m-0 text-sm text-slate-500">هنوز قابلیتی انتخاب نشده است.</p>
@@ -174,16 +199,16 @@ export function SelectionSummary({ features, selected, applied }: { features: Fe
               <li key={feature.key} className="flex items-center gap-2">
                 <Check size={14} aria-hidden className="shrink-0 text-green-600" />
                 <span className="flex-1">{feature.title}</span>
-                {added.has(feature.key) && <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-brand">جدید</span>}
+                {addedKeys.has(feature.key) && <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-brand">جدید</span>}
               </li>
             ))}
           </ul>
         )}
-        {removed.length > 0 && (
+        {removedFeatures.length > 0 && (
           <div>
-            <p className="m-0 mb-1.5 text-xs font-bold text-slate-500">برداشته شد ({removed.length.toLocaleString("fa-IR")})</p>
+            <p className="m-0 mb-1.5 text-xs font-bold text-slate-500">برداشته شد ({removedFeatures.length.toLocaleString("fa-IR")})</p>
             <ul className="m-0 list-none space-y-1 p-0 text-xs text-slate-400 line-through">
-              {removed.map((feature) => <li key={feature.key}>{feature.title}</li>)}
+              {removedFeatures.map((feature) => <li key={feature.key}>{feature.title}</li>)}
             </ul>
           </div>
         )}
