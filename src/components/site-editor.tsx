@@ -5,6 +5,7 @@ import { useActionState, useEffect, useMemo, useState, type ReactNode } from "re
 import type { FormState } from "@/app/actions";
 import { formatToman, normalizeDigits } from "@/lib/format";
 import { FeatureGrid, PackagePicker, type FeatureOption, type PackageOption } from "./feature-grid";
+import { JalaliDateField } from "./jalali-date-field";
 import { Select } from "./select";
 import { PriceInput } from "./price-input";
 import { KeyBox } from "./key-box";
@@ -101,7 +102,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
               <PriceInput id="contractPrice" name="contractPrice" value={price} onValueChange={setPrice} {...invalid("contractPrice")} />
             </Field>
             <Field label="تاریخ انقضا" htmlFor="expiresAt" hint="خالی یعنی بدون انقضا">
-              <input id="expiresAt" name="expiresAt" type="date" dir="ltr" defaultValue={site.expiresAt} className="input text-left" />
+              <JalaliDateField id="expiresAt" name="expiresAt" defaultValue={site.expiresAt} aria-describedby="expiresAt-msg" />
             </Field>
             <div className="sm:col-span-2">
               <Field label="یادداشت" htmlFor="notes" error={errors.notes} hint={`حداکثر ${LIMITS.notes} نویسه`}>
