@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/lib/db";
+import { SitesFilters } from "./sites-filters";
 import { formatDate, formatDateTime, formatToman } from "@/lib/format";
 
 type SearchParams = Promise<{ q?: string; status?: string }>;
@@ -50,18 +51,7 @@ export default async function SitesPage({ searchParams }: { searchParams: Search
         ))}
       </div>
 
-      <form className="mb-4 flex flex-wrap gap-2" role="search">
-        <div className="relative min-w-56 flex-1">
-          <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
-          <input name="q" defaultValue={query} maxLength={100} placeholder="جستجوی دامنه یا مشتری" aria-label="جستجو" className="input !ps-9" />
-        </div>
-        <select name="status" defaultValue={status} aria-label="وضعیت" className="input !w-auto">
-          <option value="">همه وضعیت‌ها</option>
-          <option value="ACTIVE">فعال</option>
-          <option value="SUSPENDED">تعلیق</option>
-        </select>
-        <button className="btn btn-ghost" type="submit">اعمال</button>
-      </form>
+      <SitesFilters initialQuery={query} initialStatus={status === "ACTIVE" || status === "SUSPENDED" ? status : ""} />
 
       <div className="card overflow-x-auto !p-0">
         <table className="w-full min-w-[46rem] text-sm">

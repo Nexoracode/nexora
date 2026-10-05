@@ -5,6 +5,7 @@ import { useActionState, useMemo, useState } from "react";
 import type { FormState } from "@/app/actions";
 import { formatToman, normalizeDigits } from "@/lib/format";
 import { FeatureGrid, PackagePicker, type FeatureOption, type PackageOption } from "./feature-grid";
+import { Select } from "./select";
 import { PriceInput } from "./price-input";
 import { KeyBox } from "./key-box";
 import { Field, SubmitButton } from "./ui";
@@ -35,6 +36,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
 }) {
   const [state, formAction] = useActionState(action, {});
   const [selected, setSelected] = useState(() => new Set(site.featureKeys));
+  const [status, setStatus] = useState<SiteDefaults["status"]>(site.status);
   const [price, setPrice] = useState(String(site.contractPrice || ""));
   const errors = state.fieldErrors ?? {};
   const total = useMemo(() => features.filter((f) => selected.has(f.key)).reduce((sum, f) => sum + f.price, 0), [features, selected]);
@@ -65,10 +67,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
           <input id="clientPhone" name="clientPhone" dir="ltr" inputMode="tel" defaultValue={site.clientPhone} maxLength={LIMITS.clientPhone} className="input text-left" {...invalid("clientPhone")} />
         </Field>
         <Field label="وضعیت" htmlFor="status">
-          <select id="status" name="status" defaultValue={site.status} className="input">
-            <option value="ACTIVE">فعال</option>
-            <option value="SUSPENDED">تعلیق</option>
-          </select>
+          <Select id="status" name="status" label="وضعیت" value={status} onChange={(value) => setStatus(value as SiteDefaults["status"])} options={[{ value: "ACTIVE", label: "فعال" }, { value: "SUSPENDED", label: "تعلیق" }]} />
         </Field>
         <Field label="مبلغ قرارداد (تومان)" htmlFor="contractPrice" error={errors.contractPrice}>
           <PriceInput id="contractPrice" name="contractPrice" value={price} onValueChange={setPrice} {...invalid("contractPrice")} />
