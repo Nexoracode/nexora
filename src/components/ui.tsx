@@ -15,16 +15,6 @@ export function SubmitButton({ children, variant = "primary" }: { children: Reac
   );
 }
 
-/** Icon-only submit button for table rows: needs an accessible label, shows a spinner while the action runs. */
-export function IconSubmitButton({ label, children, variant = "ghost" }: { label: string; children: ReactNode; variant?: "ghost" | "danger" }) {
-  const { pending } = useFormStatus();
-  return (
-    <button type="submit" disabled={pending} aria-label={label} title={label} className={`btn btn-${variant} !px-2.5 !py-2`}>
-      {pending ? <Loader2 size={16} className="animate-spin" aria-hidden /> : children}
-    </button>
-  );
-}
-
 /**
  * Label + control + one reserved message line. The line always occupies the same height, so an
  * error appearing never shifts the rest of the form; a hint and an error share that line.

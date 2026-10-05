@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { Fragment, useState } from "react";
 import { Pencil, Power, PowerOff, X } from "lucide-react";
 import { toggleFeatureActiveAction } from "@/app/actions";
 import type { FeatureOption } from "@/components/feature-grid";
 import { ConfirmForm } from "@/components/confirm-form";
-import { IconSubmitButton } from "@/components/ui";
+import { IconButton, IconLink, IconSubmitButton } from "@/components/icon-action";
 import { formatToman } from "@/lib/format";
 
 /** One page of features; a row opens its details below it, the icons edit it or switch it on/off. */
@@ -53,7 +52,7 @@ export function FeaturesTable({ features }: { features: FeatureOption[] }) {
                   {/* Clicks on the icons must not open or close the row. */}
                   <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
                     <div className="flex items-center gap-1.5">
-                      <Link href={`/features/${feature.key}/edit`} aria-label={`ویرایش ${feature.title}`} title="ویرایش" className="btn btn-ghost !px-2.5 !py-2"><Pencil size={16} aria-hidden /></Link>
+                      <IconLink href={`/features/${feature.key}/edit`} label={`ویرایش ${feature.title}`} tip="ویرایش"><Pencil size={17} aria-hidden /></IconLink>
                       {feature.isActive ? (
                         <ConfirmForm
                           action={toggleFeatureActiveAction.bind(null, feature.key)}
@@ -61,12 +60,12 @@ export function FeaturesTable({ features }: { features: FeatureOption[] }) {
                           message="تا فعال‌سازی دوباره، این قابلیت قابل خرید نیست. سایت‌هایی که آن را دارند همچنان استفاده می‌کنند."
                           confirmLabel="غیرفعال شود"
                           trigger={(open) => (
-                            <button type="button" onClick={open} aria-label={`غیرفعال‌کردن ${feature.title}`} title="غیرفعال‌کردن" className="btn btn-danger !px-2.5 !py-2"><PowerOff size={16} aria-hidden /></button>
+                            <IconButton label={`غیرفعال‌کردن ${feature.title}`} tip="غیرفعال‌کردن" tone="danger" onClick={open}><PowerOff size={17} aria-hidden /></IconButton>
                           )}
                         />
                       ) : (
                         <form action={toggleFeatureActiveAction.bind(null, feature.key)}>
-                          <IconSubmitButton label={`فعال‌کردن ${feature.title}`}><Power size={16} aria-hidden /></IconSubmitButton>
+                          <IconSubmitButton label={`فعال‌کردن ${feature.title}`} tip="فعال‌کردن" tone="success"><Power size={17} aria-hidden /></IconSubmitButton>
                         </form>
                       )}
                     </div>
