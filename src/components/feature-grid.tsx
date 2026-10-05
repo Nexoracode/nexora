@@ -63,15 +63,47 @@ export function FeatureGrid({ features, selected, onChange }: { features: Featur
   );
 }
 
-/** Quick-apply buttons: replace the current selection with a package's features. */
-export function PackagePicker({ packages, onApply }: { packages: PackageOption[]; onApply: (pkg: PackageOption) => void }) {
+/**
+ * Ready-made packages as cards. Choosing one ticks exactly its features in one go; the card that
+ * matches the current selection stays highlighted, and when nothing matches the selection reads
+ * as "custom". The ticks can still be changed by hand afterwards.
+ */
+export function PackagePicker({ packages, selected, onApply }: { packages: PackageOption[]; selected: ReadonlySet<string>; onApply: (pkg: PackageOption) => void }) {
   if (packages.length === 0) return null;
+  const matches = (pkg: PackageOption) => pkg.featureKeys.length === selected.size && pkg.featureKeys.every((key) => selected.has(key));
+  const current = packages.find(matches);
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm text-slate-600">اعمال بسته:</span>
-      {packages.map((pkg) => (
-        <button key={pkg.id} type="button" onClick={() => onApply(pkg)} className="btn btn-ghost !px-3 !py-1.5 !text-xs">{pkg.name}</button>
-      ))}
+    <div className="rounded-xl bg-slate-50 p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="m-0 text-sm font-bold">شروع با یک بسته آماده</h3>
+          <p className="m-0 mt-1 text-xs text-slate-500">با انتخاب بسته، قابلیت‌های آن یک‌جا تیک می‌خورد. بعد می‌توانید دستی کم و زیاد کنید.</p>
+        </div>
+        <span className="rounded-full bg-white px-3 py-1 text-xs text-slate-600 ring-1 ring-slate-200">
+          {current ? `بستهٔ ${current.name}` : `سفارشی · ${selected.size.toLocaleString("fa-IR")} قابلیت`}
+        </span>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {packages.map((pkg) => {
+          const active = current?.id === pkg.id;
+          return (
+            <button
+              key={pkg.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onApply(pkg)}
+              className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-start transition-colors ${active ? "border-brand bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
+            >
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-bold">{pkg.name}</span>
+                <span className="block text-xs text-slate-500">{pkg.featureKeys.length.toLocaleString("fa-IR")} قابلیت</span>
+              </span>
+              <span className="shrink-0 text-xs font-medium text-slate-700">{formatToman(pkg.price)}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

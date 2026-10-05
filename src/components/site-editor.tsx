@@ -121,7 +121,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
                 {contract > 0 && <span className={contract >= total ? "text-green-700" : "text-amber-700"}> · قرارداد {formatToman(contract)}</span>}
               </p>
             </div>
-            <PackagePicker packages={packages} onApply={(pkg) => { setSelected(new Set(pkg.featureKeys)); if (!price) setPrice(String(pkg.price || "")); }} />
+            <PackagePicker packages={packages} selected={selected} onApply={(pkg) => { setSelected(new Set(pkg.featureKeys)); if (!price) setPrice(String(pkg.price || "")); }} />
             <FeatureGrid features={features} selected={selected} onChange={setSelected} />
           </section>
         </TabPanel>
