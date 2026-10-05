@@ -13,6 +13,7 @@ import { KeyBox } from "./key-box";
 import { Loader2 } from "lucide-react";
 import { useResultToast } from "@/components/use-result-toast";
 import { TabPanel, Tabs } from "./tabs";
+import { useSubmitWithoutReset } from "./use-submit-without-reset";
 import { Field } from "./ui";
 
 export type SiteDefaults = {
@@ -48,6 +49,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
   infoAside?: ReactNode;
 }) {
   const [state, formAction, saving] = useActionState(action, {});
+  const submit = useSubmitWithoutReset(formAction);
   useResultToast(state, "تغییرات ذخیره شد.");
   const [selected, setSelected] = useState(() => new Set(site.featureKeys));
   // The saved selection: the card measures what was added or removed against it.
@@ -99,7 +101,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
 
       {infoTop && <div hidden={tab !== "info"}>{infoTop}</div>}
 
-      <form id="site-form" action={formAction} className="space-y-5">
+      <form id="site-form" onSubmit={submit} className="space-y-5">
         <TabPanel id="info" value={tab} idPrefix={idPrefix}>
           <div className={infoAside ? "grid gap-5 xl:grid-cols-[minmax(0,52rem)_minmax(20rem,1fr)]" : ""}>
           <section className="card grid max-w-4xl gap-x-4 sm:grid-cols-2">

@@ -4,9 +4,13 @@ import type { ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 
-/** Disables itself and shows a spinner for the whole time the surrounding form action runs. */
-export function SubmitButton({ children, variant = "primary" }: { children: ReactNode; variant?: "primary" | "danger" | "ghost" }) {
-  const { pending } = useFormStatus();
+/**
+ * Disables itself and shows a spinner while the surrounding form action runs. A form submitted through
+ * `useSubmitWithoutReset` is not a form action, so it passes its own `pending` flag instead.
+ */
+export function SubmitButton({ children, variant = "primary", pending: pendingOverride }: { children: ReactNode; variant?: "primary" | "danger" | "ghost"; pending?: boolean }) {
+  const status = useFormStatus();
+  const pending = pendingOverride ?? status.pending;
   return (
     <button type="submit" disabled={pending} className={`btn btn-${variant}`}>
       {pending && <Loader2 size={16} className="animate-spin" aria-hidden />}

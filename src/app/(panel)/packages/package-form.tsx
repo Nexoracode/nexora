@@ -7,13 +7,15 @@ import { FeatureGrid, SelectionSummary, type FeatureOption, type PackageOption }
 import { PriceInput } from "@/components/price-input";
 import { Field, SubmitButton } from "@/components/ui";
 import { useResultToast } from "@/components/use-result-toast";
+import { useSubmitWithoutReset } from "@/components/use-submit-without-reset";
 
 // Mirrors packageSchema in src/app/actions.ts and Package.name in prisma/schema.prisma.
 const NAME_MAX = 120;
 
 /** Create (`pkg = null`) or edit a package: name, price and the features it contains. */
 export function PackageForm({ pkg, features }: { pkg: PackageOption | null; features: FeatureOption[] }) {
-  const [state, action] = useActionState(savePackageAction.bind(null, pkg?.id ?? null), {});
+  const [state, action, pending] = useActionState(savePackageAction.bind(null, pkg?.id ?? null), {});
+  const submit = useSubmitWithoutReset(action);
   useResultToast(state, "بسته ذخیره شد.");
   const [selected, setSelected] = useState(() => new Set(pkg?.featureKeys ?? []));
   const baseline = useMemo(() => new Set(pkg?.featureKeys ?? []), [pkg]);
@@ -21,7 +23,7 @@ export function PackageForm({ pkg, features }: { pkg: PackageOption | null; feat
   const a11y = (name: string) => ({ "aria-invalid": errors[name] ? true : undefined, "aria-describedby": `${name}-msg` }) as const;
 
   return (
-    <form action={action} className="space-y-5">
+    <form onSubmit={submit} className="space-y-5">
       <section className="card grid max-w-4xl gap-x-4 sm:grid-cols-2">
         <Field label="نام بسته" htmlFor="name" error={errors.name}>
           <input id="name" name="name" defaultValue={pkg?.name} maxLength={NAME_MAX} className="input" {...a11y("name")} />
@@ -41,7 +43,7 @@ export function PackageForm({ pkg, features }: { pkg: PackageOption | null; feat
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <SubmitButton>{pkg ? "ذخیره بسته" : "افزودن بسته"}</SubmitButton>
+        <SubmitButton pending={pending}>{pkg ? "ذخیره بسته" : "افزودن بسته"}</SubmitButton>
         <Link href="/packages" className="btn btn-ghost">بازگشت</Link>
       </div>
     </form>
