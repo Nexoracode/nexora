@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { deletePackageAction, savePackageAction } from "@/app/actions";
 import { FeatureGrid, type FeatureOption, type PackageOption } from "@/components/feature-grid";
 import { ConfirmForm } from "@/components/confirm-form";
+import { useResultToast } from "@/components/use-result-toast";
 import { PriceInput } from "@/components/price-input";
 import { Field, SubmitButton } from "@/components/ui";
 
@@ -13,6 +14,7 @@ const NAME_MAX = 120;
 /** One card per package; `pkg = null` renders the "new package" form. */
 export function PackageCard({ pkg, features }: { pkg: PackageOption | null; features: FeatureOption[] }) {
   const [state, action] = useActionState(savePackageAction.bind(null, pkg?.id ?? null), {});
+  useResultToast(state, "بسته ذخیره شد.");
   const [selected, setSelected] = useState(() => new Set(pkg?.featureKeys ?? []));
   const id = pkg?.id ?? "new";
 
@@ -20,8 +22,6 @@ export function PackageCard({ pkg, features }: { pkg: PackageOption | null; feat
     <section className="card space-y-4">
       <h2 className="font-bold">{pkg ? pkg.name : "بسته جدید"}</h2>
       <form action={action} className="space-y-4">
-        {state.error && <p role="alert" className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">{state.error}</p>}
-        {state.saved && <p role="status" className="rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700">ذخیره شد.</p>}
         <div className="grid gap-x-4 sm:grid-cols-2">
           <Field label="نام بسته" htmlFor={`name-${id}`}>
             <input id={`name-${id}`} name="name" defaultValue={pkg?.name} maxLength={NAME_MAX} className="input" />

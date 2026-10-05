@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { saveOwnerSettingsAction } from "@/app/actions";
+import { useResultToast } from "@/components/use-result-toast";
 import { Field, SubmitButton } from "@/components/ui";
 
 type Defaults = { holderName: string; cardNumber: string; sheba: string; bankName: string; contactPhone: string; note: string; onlineMerchantId: string; onlineSandbox: boolean };
@@ -11,11 +12,11 @@ const LIMITS = { holderName: 120, cardNumber: 19, sheba: 26, bankName: 60, conta
 
 export function OwnerForm({ defaults }: { defaults: Defaults }) {
   const [state, action] = useActionState(saveOwnerSettingsAction, {});
+  useResultToast(state, "اطلاعات حساب ذخیره شد.");
   const errors = state.fieldErrors ?? {};
   const a11y = (name: string) => ({ "aria-invalid": errors[name] ? true : undefined, "aria-describedby": `${name}-msg` }) as const;
   return (
     <form action={action} className="card space-y-2">
-      {state.saved && <p role="status" className="rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700">ذخیره شد.</p>}
       <div className="grid gap-x-4 sm:grid-cols-2">
         <Field label="نام صاحب حساب" htmlFor="holderName" error={errors.holderName}>
           <input id="holderName" name="holderName" defaultValue={defaults.holderName} maxLength={LIMITS.holderName} className="input" {...a11y("holderName")} />

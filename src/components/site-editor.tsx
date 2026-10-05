@@ -11,6 +11,7 @@ import { SuggestInput } from "./suggest-input";
 import { PriceInput } from "./price-input";
 import { KeyBox } from "./key-box";
 import { Loader2 } from "lucide-react";
+import { useResultToast } from "@/components/use-result-toast";
 import { TabPanel, Tabs } from "./tabs";
 import { Field } from "./ui";
 
@@ -47,6 +48,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
   infoAside?: ReactNode;
 }) {
   const [state, formAction, saving] = useActionState(action, {});
+  useResultToast(state, "تغییرات ذخیره شد.");
   const [selected, setSelected] = useState(() => new Set(site.featureKeys));
   const [status, setStatus] = useState<SiteDefaults["status"]>(site.status);
   const [price, setPrice] = useState(String(site.contractPrice || ""));
@@ -76,8 +78,6 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
           {state.siteId && <Link href={`/sites/${state.siteId}`} className="btn btn-primary">رفتن به صفحه سایت</Link>}
         </div>
       )}
-      {!state.key && state.error && <p role="alert" className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">{state.error}</p>}
-      {state.saved && <p role="status" className="rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700">تغییرات ذخیره شد.</p>}
 
       {/* Tabs and the save button share one row that stays at the top while the page scrolls (desktop). */}
       <div className="flex items-center justify-between gap-4 bg-[#f6f7fb] shadow-[inset_0_-1px_0_#e2e8f0] lg:sticky lg:top-0 lg:z-20">

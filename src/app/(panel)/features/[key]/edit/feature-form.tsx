@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { saveFeatureAction } from "@/app/actions";
+import { useResultToast } from "@/components/use-result-toast";
 import { PriceInput } from "@/components/price-input";
 import { SuggestInput } from "@/components/suggest-input";
 import { Field, SubmitButton } from "@/components/ui";
@@ -14,13 +15,12 @@ const LIMITS = { title: 120, group: 80, description: 500 } as const;
 
 export function FeatureForm({ featureKey, groups, defaults }: { featureKey: string; groups: string[]; defaults: Defaults }) {
   const [state, action] = useActionState(saveFeatureAction.bind(null, featureKey), {});
+  useResultToast(state, "قابلیت ذخیره شد.");
   const errors = state.fieldErrors ?? {};
   const a11y = (name: string) => ({ "aria-invalid": errors[name] ? true : undefined, "aria-describedby": `${name}-msg` }) as const;
 
   return (
     <form action={action} className="card space-y-2">
-      {state.saved && <p role="status" className="rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700">ذخیره شد.</p>}
-      {state.error && !state.fieldErrors && <p role="alert" className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">{state.error}</p>}
       <div className="grid gap-x-4 sm:grid-cols-2">
         <Field label="عنوان" htmlFor="title" error={errors.title}>
           <input id="title" name="title" defaultValue={defaults.title} maxLength={LIMITS.title} className="input" {...a11y("title")} />
