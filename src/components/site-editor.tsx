@@ -46,6 +46,8 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
   const [selected, setSelected] = useState(() => new Set(site.featureKeys));
   const [status, setStatus] = useState<SiteDefaults["status"]>(site.status);
   const [price, setPrice] = useState(String(site.contractPrice || ""));
+  // How things were before the first package was applied, so one click can bring them back.
+  const [beforePackage, setBeforePackage] = useState<{ selected: Set<string>; price: string } | null>(null);
   const [tab, setTab] = useState("info");
   const errors = state.fieldErrors ?? {};
 
@@ -121,7 +123,13 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
                 {contract > 0 && <span className={contract >= total ? "text-green-700" : "text-amber-700"}> · قرارداد {formatToman(contract)}</span>}
               </p>
             </div>
-            <PackagePicker packages={packages} selected={selected} onApply={(pkg) => { setSelected(new Set(pkg.featureKeys)); if (!price) setPrice(String(pkg.price || "")); }} />
+            <PackagePicker packages={packages} selected={selected} onApply={(pkg) => {
+              setBeforePackage((prev) => prev ?? { selected: new Set(selected), price });
+              setSelected(new Set(pkg.featureKeys));
+              if (!price) setPrice(String(pkg.price || ""));
+            }}
+            onUndo={beforePackage ? () => { setSelected(beforePackage.selected); setPrice(beforePackage.price); setBeforePackage(null); } : undefined}
+          />
             <FeatureGrid features={features} selected={selected} onChange={setSelected} />
           </section>
         </TabPanel>

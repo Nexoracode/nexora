@@ -64,46 +64,59 @@ export function FeatureGrid({ features, selected, onChange }: { features: Featur
 }
 
 /**
- * Ready-made packages as cards. Choosing one ticks exactly its features in one go; the card that
- * matches the current selection stays highlighted, and when nothing matches the selection reads
- * as "custom". The ticks can still be changed by hand afterwards.
+ * Ready-made packages, behind a checkbox: the list only shows once "start from a package" is on.
+ * Choosing a card ticks exactly its features in one go; the card that matches the current
+ * selection stays highlighted, and when nothing matches the selection reads as "custom".
+ * `onUndo` (when given) puts the selection back to how it was before the first package was applied.
  */
-export function PackagePicker({ packages, selected, onApply }: { packages: PackageOption[]; selected: ReadonlySet<string>; onApply: (pkg: PackageOption) => void }) {
+export function PackagePicker({ packages, selected, onApply, onUndo }: { packages: PackageOption[]; selected: ReadonlySet<string>; onApply: (pkg: PackageOption) => void; onUndo?: () => void }) {
+  const [enabled, setEnabled] = useState(false);
   if (packages.length === 0) return null;
   const matches = (pkg: PackageOption) => pkg.featureKeys.length === selected.size && pkg.featureKeys.every((key) => selected.has(key));
   const current = packages.find(matches);
 
   return (
     <div className="rounded-xl bg-slate-50 p-4">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="m-0 text-sm font-bold">شروع با یک بسته آماده</h3>
-          <p className="m-0 mt-1 text-xs text-slate-500">با انتخاب بسته، قابلیت‌های آن یک‌جا تیک می‌خورد. بعد می‌توانید دستی کم و زیاد کنید.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} className="mt-1 size-4 accent-indigo-600" />
+          <span>
+            <span className="block text-sm font-bold">شروع با یک بسته آماده</span>
+            <span className="block text-xs text-slate-500">با انتخاب بسته، قابلیت‌های آن یک‌جا تیک می‌خورد. بعد می‌توانید دستی کم و زیاد کنید.</span>
+          </span>
+        </label>
+        {onUndo && (
+          <button type="button" onClick={onUndo} className="btn btn-ghost !px-3 !py-1.5 !text-xs">بازگرداندن به حالت قبل</button>
+        )}
+      </div>
+
+      {enabled && (
+        <div className="mt-4 space-y-3">
+          <span className="inline-block rounded-full bg-white px-3 py-1 text-xs text-slate-600 ring-1 ring-slate-200">
+            {current ? `بستهٔ ${current.name}` : `سفارشی · ${selected.size.toLocaleString("fa-IR")} قابلیت`}
+          </span>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {packages.map((pkg) => {
+              const active = current?.id === pkg.id;
+              return (
+                <button
+                  key={pkg.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onApply(pkg)}
+                  className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-start transition-colors ${active ? "border-brand bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold">{pkg.name}</span>
+                    <span className="block text-xs text-slate-500">{pkg.featureKeys.length.toLocaleString("fa-IR")} قابلیت</span>
+                  </span>
+                  <span className="shrink-0 text-xs font-medium text-slate-700">{formatToman(pkg.price)}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <span className="rounded-full bg-white px-3 py-1 text-xs text-slate-600 ring-1 ring-slate-200">
-          {current ? `بستهٔ ${current.name}` : `سفارشی · ${selected.size.toLocaleString("fa-IR")} قابلیت`}
-        </span>
-      </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {packages.map((pkg) => {
-          const active = current?.id === pkg.id;
-          return (
-            <button
-              key={pkg.id}
-              type="button"
-              aria-pressed={active}
-              onClick={() => onApply(pkg)}
-              className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-start transition-colors ${active ? "border-brand bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
-            >
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-bold">{pkg.name}</span>
-                <span className="block text-xs text-slate-500">{pkg.featureKeys.length.toLocaleString("fa-IR")} قابلیت</span>
-              </span>
-              <span className="shrink-0 text-xs font-medium text-slate-700">{formatToman(pkg.price)}</span>
-            </button>
-          );
-        })}
-      </div>
+      )}
     </div>
   );
 }
