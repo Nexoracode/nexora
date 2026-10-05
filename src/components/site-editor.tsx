@@ -10,8 +10,9 @@ import { Select } from "./select";
 import { SuggestInput } from "./suggest-input";
 import { PriceInput } from "./price-input";
 import { KeyBox } from "./key-box";
+import { Loader2 } from "lucide-react";
 import { TabPanel, Tabs } from "./tabs";
-import { Field, SubmitButton } from "./ui";
+import { Field } from "./ui";
 
 export type SiteDefaults = {
   domain: string;
@@ -45,7 +46,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
   /** Display-only card shown beside the info form (the site history). */
   infoAside?: ReactNode;
 }) {
-  const [state, formAction] = useActionState(action, {});
+  const [state, formAction, saving] = useActionState(action, {});
   const [selected, setSelected] = useState(() => new Set(site.featureKeys));
   const [status, setStatus] = useState<SiteDefaults["status"]>(site.status);
   const [price, setPrice] = useState(String(site.contractPrice || ""));
@@ -78,17 +79,25 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
       {!state.key && state.error && <p role="alert" className="rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">{state.error}</p>}
       {state.saved && <p role="status" className="rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700">تغییرات ذخیره شد.</p>}
 
-      <Tabs
-        label="بخش‌های سایت"
-        idPrefix={idPrefix}
-        value={tab}
-        onChange={setTab}
-        tabs={[{ id: "info", label: "مشخصات" }, { id: "features", label: "قابلیت‌ها", badge: selected.size }, ...extraTabs.map(({ id, label, badge }) => ({ id, label, badge }))]}
-      />
+      {/* Tabs and the save button share one row that stays at the top while the page scrolls (desktop). */}
+      <div className="flex items-center justify-between gap-4 bg-[#f6f7fb] shadow-[inset_0_-1px_0_#e2e8f0] lg:sticky lg:top-0 lg:z-20">
+        <Tabs
+          bare
+          label="بخش‌های سایت"
+          idPrefix={idPrefix}
+          value={tab}
+          onChange={setTab}
+          tabs={[{ id: "info", label: "مشخصات" }, { id: "features", label: "قابلیت‌ها", badge: selected.size }, ...extraTabs.map(({ id, label, badge }) => ({ id, label, badge }))]}
+        />
+        <button type="submit" form="site-form" disabled={saving} hidden={!editsForm} className="btn btn-primary my-1.5 shrink-0">
+          {saving && <Loader2 size={16} className="animate-spin" aria-hidden />}
+          {mode === "create" ? "ثبت سایت و ساخت کلید" : "ذخیره تغییرات"}
+        </button>
+      </div>
 
       {infoTop && <div hidden={tab !== "info"}>{infoTop}</div>}
 
-      <form action={formAction} className="space-y-5">
+      <form id="site-form" action={formAction} className="space-y-5">
         <TabPanel id="info" value={tab} idPrefix={idPrefix}>
           <div className={infoAside ? "grid gap-5 xl:grid-cols-[minmax(0,52rem)_minmax(20rem,1fr)]" : ""}>
           <section className="card grid max-w-4xl gap-x-4 sm:grid-cols-2">
@@ -145,15 +154,6 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
           </div>
         </TabPanel>
 
-        {/* Stays at the bottom edge while the long features tab scrolls, so saving is always one click away. */}
-        <div hidden={!editsForm} className="sticky bottom-4 z-20">
-          <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
-            <SubmitButton>{mode === "create" ? "ثبت سایت و ساخت کلید" : "ذخیره تغییرات"}</SubmitButton>
-            <p className="m-0 text-sm text-slate-500">
-              {selected.size.toLocaleString("fa-IR")} قابلیت انتخاب شده · {formatToman(total)}
-            </p>
-          </div>
-        </div>
       </form>
 
       {extraTabs.map((extra) => (

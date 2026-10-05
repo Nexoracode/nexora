@@ -5,7 +5,7 @@ import type { KeyboardEvent } from "react";
 export type TabItem = { id: string; label: string; badge?: number };
 
 /** Underlined tab strip. Panels stay mounted by the caller (hidden, not removed) so a form spanning tabs submits everything. */
-export function Tabs({ tabs, value, onChange, label, idPrefix }: { tabs: TabItem[]; value: string; onChange: (id: string) => void; label: string; idPrefix: string }) {
+export function Tabs({ tabs, value, onChange, label, idPrefix, bare = false }: { tabs: TabItem[]; value: string; onChange: (id: string) => void; label: string; idPrefix: string; /** No underline of its own: the parent draws one under a wider row. */ bare?: boolean }) {
   const move = (event: KeyboardEvent, index: number) => {
     // Tabs run right-to-left, so the "next" tab is to the left.
     const step = event.key === "ArrowLeft" ? 1 : event.key === "ArrowRight" ? -1 : 0;
@@ -19,7 +19,7 @@ export function Tabs({ tabs, value, onChange, label, idPrefix }: { tabs: TabItem
   };
 
   return (
-    <div role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto shadow-[inset_0_-1px_0_#e2e8f0]">
+    <div role="tablist" aria-label={label} className={`flex gap-1 overflow-x-auto ${bare ? "" : "shadow-[inset_0_-1px_0_#e2e8f0]"}`}>
       {tabs.map((tab, index) => {
         const active = tab.id === value;
         return (
