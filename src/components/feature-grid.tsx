@@ -146,10 +146,23 @@ export function PackagePicker({ packages, selected, onApply, onAppliedChange, on
   );
 }
 
-/** Docked card listing what the last applied package selected, and what it added or removed. */
-export function PackageSummary({ applied, features, onClose }: { applied: AppliedPackage; features: FeatureOption[]; onClose: () => void }) {
+const CLOSE_ANIMATION_MS = 200;
+
+/**
+ * Docked card listing what the last applied package selected, and what it added or removed.
+ * `onClose` asks to close; while `closing` the card plays its entrance backwards, then
+ * `onClosed` runs so the parent can remove it.
+ */
+export function PackageSummary({ applied, features, closing, onClose, onClosed }: { applied: AppliedPackage; features: FeatureOption[]; closing: boolean; onClose: () => void; onClosed: () => void }) {
   const titleByKey = useMemo(() => new Map(features.map((feature) => [feature.key, feature.title])), [features]);
   const title = (key: string) => titleByKey.get(key) ?? key;
+
+  useEffect(() => {
+    if (!closing) return;
+    // A timer rather than `animationend`, so it still finishes when the user prefers reduced motion.
+    const timer = setTimeout(onClosed, CLOSE_ANIMATION_MS);
+    return () => clearTimeout(timer);
+  }, [closing, onClosed]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
@@ -158,7 +171,7 @@ export function PackageSummary({ applied, features, onClose }: { applied: Applie
   }, [onClose]);
 
   return (
-    <aside aria-label={`قابلیت‌های بستهٔ ${applied.pkg.name}`} className="slide-in-right self-start rounded-2xl border border-slate-200 bg-white lg:sticky lg:top-6">
+    <aside aria-label={`قابلیت‌های بستهٔ ${applied.pkg.name}`} className={`${closing ? "slide-out-right" : "slide-in-right"} self-start rounded-2xl border border-slate-200 bg-white lg:sticky lg:top-6`}>
       <header className="flex items-start justify-between gap-3 border-b border-slate-100 p-4">
         <div className="min-w-0">
           <h3 className="m-0 truncate text-sm font-bold">بستهٔ {applied.pkg.name}</h3>

@@ -84,12 +84,25 @@ body {
   }
 }
 
+@keyframes slide-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+}
+
 .slide-in-right {
   animation: slide-in-right 0.18s ease-out;
 }
 
+/* The entrance played backwards; kept in its final state until the card is removed. */
+.slide-out-right {
+  animation: slide-out-right 0.18s ease-in forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .slide-in-right {
+  .slide-in-right,
+  .slide-out-right {
     animation: none;
   }
 }
