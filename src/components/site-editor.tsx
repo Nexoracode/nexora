@@ -5,6 +5,7 @@ import { useActionState, useMemo, useState } from "react";
 import type { FormState } from "@/app/actions";
 import { formatToman, normalizeDigits } from "@/lib/format";
 import { FeatureGrid, PackagePicker, type FeatureOption, type PackageOption } from "./feature-grid";
+import { PriceInput } from "./price-input";
 import { KeyBox } from "./key-box";
 import { Field, SubmitButton } from "./ui";
 
@@ -70,7 +71,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
           </select>
         </Field>
         <Field label="مبلغ قرارداد (تومان)" htmlFor="contractPrice" error={errors.contractPrice}>
-          <input id="contractPrice" name="contractPrice" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} maxLength={14} className="input" {...invalid("contractPrice")} />
+          <PriceInput id="contractPrice" name="contractPrice" value={price} onValueChange={setPrice} {...invalid("contractPrice")} />
         </Field>
         <Field label="تاریخ انقضا" htmlFor="expiresAt" hint="خالی یعنی بدون انقضا">
           <input id="expiresAt" name="expiresAt" type="date" dir="ltr" defaultValue={site.expiresAt} className="input text-left" />

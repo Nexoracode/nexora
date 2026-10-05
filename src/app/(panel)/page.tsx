@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { db } from "@/lib/db";
 import { formatDate, formatDateTime, formatToman } from "@/lib/format";
 
@@ -8,7 +9,7 @@ type SearchParams = Promise<{ q?: string; status?: string }>;
 export default async function SitesPage({ searchParams }: { searchParams: SearchParams }) {
   const { q = "", status = "" } = await searchParams;
   const query = q.trim().slice(0, 100);
-  const [sites, featureTotal, totals] = await Promise.all([
+  const [sites, featureTotal, totals, activeCount] = await Promise.all([
     db.site.findMany({
       where: {
         ...(status === "ACTIVE" || status === "SUSPENDED" ? { status } : {}),
@@ -18,66 +19,85 @@ export default async function SitesPage({ searchParams }: { searchParams: Search
       select: {
         id: true, domain: true, status: true, contractPrice: true, expiresAt: true, lastSeenAt: true,
         client: { select: { name: true } },
-        features: { select: { feature: { select: { title: true } } }, orderBy: { feature: { sortOrder: "asc" } } },
+        _count: { select: { features: true } },
       },
     }),
     db.feature.count(),
     db.site.aggregate({ _count: true, _sum: { contractPrice: true } }),
+    db.site.count({ where: { status: "ACTIVE" } }),
   ]);
-  const activeCount = await db.site.count({ where: { status: "ACTIVE" } });
+
+  const stats = [
+    { label: "کل سایت‌ها", value: totals._count.toLocaleString("fa-IR") },
+    { label: "سایت‌های فعال", value: activeCount.toLocaleString("fa-IR") },
+    { label: "جمع قراردادها", value: formatToman(Number(totals._sum.contractPrice ?? 0)) },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="card"><p className="text-sm text-slate-500">کل سایت‌ها</p><p className="mt-1 text-2xl font-bold">{totals._count.toLocaleString("fa-IR")}</p></div>
-        <div className="card"><p className="text-sm text-slate-500">سایت‌های فعال</p><p className="mt-1 text-2xl font-bold">{activeCount.toLocaleString("fa-IR")}</p></div>
-        <div className="card"><p className="text-sm text-slate-500">جمع قراردادها</p><p className="mt-1 text-2xl font-bold">{formatToman(Number(totals._sum.contractPrice ?? 0))}</p></div>
-      </div>
+    <>
+      <PageHeader
+        title="سایت‌ها"
+        description="سایت‌های فروخته‌شده و قابلیت‌های هرکدام."
+        action={<Link href="/sites/new" className="btn btn-primary"><Plus size={16} aria-hidden />سایت جدید</Link>}
+      />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <form className="flex flex-wrap gap-2" role="search">
-          <div className="relative">
-            <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
-            <input name="q" defaultValue={query} maxLength={100} placeholder="جستجوی دامنه یا مشتری" aria-label="جستجو" className="input !ps-9" />
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        {stats.map((stat) => (
+          <div key={stat.label} className="card">
+            <p className="m-0 text-sm text-slate-500">{stat.label}</p>
+            <p className="m-0 mt-1 text-xl font-bold">{stat.value}</p>
           </div>
-          <select name="status" defaultValue={status} aria-label="وضعیت" className="input !w-auto">
-            <option value="">همه وضعیت‌ها</option>
-            <option value="ACTIVE">فعال</option>
-            <option value="SUSPENDED">تعلیق</option>
-          </select>
-          <button className="btn btn-ghost" type="submit">اعمال</button>
-        </form>
-        <Link href="/sites/new" className="btn btn-primary"><Plus size={16} aria-hidden />سایت جدید</Link>
+        ))}
       </div>
 
-      {sites.length === 0 ? (
-        <p className="card text-center text-slate-500">چیزی پیدا نشد.</p>
-      ) : (
-        <div className="space-y-3">
-          {sites.map((site) => (
-            <Link key={site.id} href={`/sites/${site.id}`} className="card block transition hover:border-brand">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p dir="ltr" className="text-start font-bold">{site.domain}</p>
-                  <p className="text-sm text-slate-500">{site.client.name}</p>
-                </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-medium ${site.status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{site.status === "ACTIVE" ? "فعال" : "تعلیق"}</span>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {site.features.slice(0, 6).map(({ feature }) => <span key={feature.title} className="rounded-md bg-indigo-50 px-2 py-1 text-xs text-indigo-700">{feature.title}</span>)}
-                {site.features.length > 6 && <span className="rounded-md bg-slate-100 px-2 py-1 text-xs">+{(site.features.length - 6).toLocaleString("fa-IR")}</span>}
-                {site.features.length === 0 && <span className="text-xs text-slate-400">بدون قابلیت اختیاری</span>}
-              </div>
-              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-500">
-                <span>{site.features.length.toLocaleString("fa-IR")} از {featureTotal.toLocaleString("fa-IR")} قابلیت</span>
-                <span>قرارداد: {formatToman(Number(site.contractPrice))}</span>
-                <span>انقضا: {formatDate(site.expiresAt)}</span>
-                <span>آخرین اتصال: {formatDateTime(site.lastSeenAt)}</span>
-              </div>
-            </Link>
-          ))}
+      <form className="mb-4 flex flex-wrap gap-2" role="search">
+        <div className="relative min-w-56 flex-1">
+          <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
+          <input name="q" defaultValue={query} maxLength={100} placeholder="جستجوی دامنه یا مشتری" aria-label="جستجو" className="input !ps-9" />
         </div>
-      )}
-    </div>
+        <select name="status" defaultValue={status} aria-label="وضعیت" className="input !w-auto">
+          <option value="">همه وضعیت‌ها</option>
+          <option value="ACTIVE">فعال</option>
+          <option value="SUSPENDED">تعلیق</option>
+        </select>
+        <button className="btn btn-ghost" type="submit">اعمال</button>
+      </form>
+
+      <div className="card overflow-x-auto !p-0">
+        <table className="w-full min-w-[46rem] text-sm">
+          <thead className="bg-slate-50 text-slate-500">
+            <tr>
+              <th className="px-4 py-3 text-start font-medium">سایت</th>
+              <th className="px-4 py-3 text-start font-medium">وضعیت</th>
+              <th className="px-4 py-3 text-start font-medium">قابلیت‌ها</th>
+              <th className="px-4 py-3 text-start font-medium">قرارداد</th>
+              <th className="px-4 py-3 text-start font-medium">انقضا</th>
+              <th className="px-4 py-3 text-start font-medium">آخرین اتصال</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sites.length === 0 && (
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">چیزی پیدا نشد.</td></tr>
+            )}
+            {sites.map((site) => (
+              <tr key={site.id} className="relative border-t border-slate-100 hover:bg-slate-50">
+                <td className="px-4 py-3">
+                  {/* The link's overlay makes the whole row clickable without JavaScript. */}
+                  <Link href={`/sites/${site.id}`} dir="ltr" className="block text-start font-bold after:absolute after:inset-0">{site.domain}</Link>
+                  <span className="text-xs text-slate-500">{site.client.name}</span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${site.status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{site.status === "ACTIVE" ? "فعال" : "تعلیق"}</span>
+                </td>
+                <td className="px-4 py-3">{site._count.features.toLocaleString("fa-IR")} از {featureTotal.toLocaleString("fa-IR")}</td>
+                <td className="px-4 py-3">{formatToman(Number(site.contractPrice))}</td>
+                <td className="px-4 py-3 text-slate-500">{formatDate(site.expiresAt)}</td>
+                <td className="px-4 py-3 text-slate-500">{formatDateTime(site.lastSeenAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

@@ -165,17 +165,22 @@ export async function deleteSiteAction(siteId: string) {
   redirect("/");
 }
 
-const featureRowSchema = z.object({ title: z.string().trim().min(1).max(120), description: z.string().trim().max(500), price: priceField });
+const featureRowSchema = z.object({
+  title: z.string().trim().min(1, "عنوان را وارد کنید.").max(120, "عنوان حداکثر ۱۲۰ نویسه است."),
+  description: z.string().trim().max(500, "توضیح حداکثر ۵۰۰ نویسه است."),
+  price: priceField,
+});
 
-export async function saveFeaturesAction(_: FormState, formData: FormData): Promise<FormState> {
+export async function saveFeatureAction(key: string, _: FormState, formData: FormData): Promise<FormState> {
   await requireOwnerAction();
-  const features = await db.feature.findMany({ select: { key: true } });
-  const rows = features.map(({ key }) => ({ key, row: featureRowSchema.safeParse({ title: formData.get(`title:${key}`), description: formData.get(`description:${key}`) ?? "", price: formData.get(`price:${key}`) }) }));
-  const bad = rows.find(({ row }) => !row.success);
-  if (bad) return { error: `مقادیر قابلیت «${bad.key}» معتبر نیست؛ عنوان الزامی، توضیح حداکثر ۵۰۰ نویسه و مبلغ باید عدد باشد.` };
-  await db.$transaction(
-    rows.flatMap(({ key, row }) => (row.success ? [db.feature.update({ where: { key }, data: { title: row.data.title, description: row.data.description || null, price: row.data.price }, select: { key: true } })] : [])),
-  );
+  const parsed = featureRowSchema.safeParse({ title: formData.get("title"), description: formData.get("description") ?? "", price: formData.get("price") });
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
+    return formError(fieldErrors);
+  }
+  if (!(await db.feature.findUnique({ where: { key }, select: { key: true } }))) return { error: "قابلیت پیدا نشد." };
+  await db.feature.update({ where: { key }, data: { title: parsed.data.title, description: parsed.data.description || null, price: parsed.data.price }, select: { key: true } });
   revalidatePath("/features");
   return { saved: true };
 }

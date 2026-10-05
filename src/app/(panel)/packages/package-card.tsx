@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { deletePackageAction, savePackageAction } from "@/app/actions";
 import { FeatureGrid, type FeatureOption, type PackageOption } from "@/components/feature-grid";
+import { PriceInput } from "@/components/price-input";
 import { Field, SubmitButton } from "@/components/ui";
 
 // Mirrors packageSchema in src/app/actions.ts and Package.name in prisma/schema.prisma.
@@ -25,7 +26,7 @@ export function PackageCard({ pkg, features }: { pkg: PackageOption | null; feat
             <input id={`name-${id}`} name="name" defaultValue={pkg?.name} maxLength={NAME_MAX} className="input" />
           </Field>
           <Field label="قیمت بسته (تومان)" htmlFor={`price-${id}`}>
-            <input id={`price-${id}`} name="price" defaultValue={pkg?.price || ""} inputMode="numeric" maxLength={14} className="input" />
+            <PriceInput id={`price-${id}`} name="price" defaultValue={pkg?.price || ""} />
           </Field>
         </div>
         <FeatureGrid features={features} selected={selected} onChange={setSelected} />

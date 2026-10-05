@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { resolvePurchaseAction } from "@/app/actions";
+import { PageHeader } from "@/components/page-header";
 import { SubmitButton } from "@/components/ui";
 import { db } from "@/lib/db";
 import { formatDateTime, formatToman } from "@/lib/format";
@@ -16,7 +17,7 @@ export default async function RequestsPage() {
   });
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">درخواست‌های خرید</h1>
+      <PageHeader title="درخواست‌های خرید" description="درخواست‌های سایت‌ها برای باز کردن قابلیت یا ارتقای بسته." />
       {requests.length === 0 && <p className="card text-center text-slate-500">درخواستی ثبت نشده است.</p>}
       {requests.map((request) => (
         <div key={request.id} className="card space-y-3">

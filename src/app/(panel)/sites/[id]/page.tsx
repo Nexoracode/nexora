@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { updateSiteAction } from "@/app/actions";
+import { PageHeader } from "@/components/page-header";
 import { SiteEditor } from "@/components/site-editor";
 import { getClientNames, getFeatureOptions, getPackageOptions } from "@/lib/catalog-queries";
 import { db } from "@/lib/db";
@@ -18,10 +19,9 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="space-y-6">
-      <Link href="/" className="text-sm text-brand">← بازگشت به سایت‌ها</Link>
       <div>
-        <h1 dir="ltr" className="text-start text-xl font-bold">{site.domain}</h1>
-        <p className="mt-1 text-sm text-slate-500">آخرین اتصال: {formatDateTime(site.lastSeenAt)} · کلید: <span dir="ltr">{site.keyPrefix}…</span></p>
+        <Link href="/" className="mb-3 inline-block text-sm text-brand">← بازگشت به سایت‌ها</Link>
+        <PageHeader title={site.domain} description={`آخرین اتصال: ${formatDateTime(site.lastSeenAt)} · کلید: ${site.keyPrefix}…`} />
       </div>
       <SiteEditor
         mode="edit"
