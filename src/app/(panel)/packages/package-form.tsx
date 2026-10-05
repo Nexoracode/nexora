@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { savePackageAction } from "@/app/actions";
-import { FeatureGrid, type FeatureOption, type PackageOption } from "@/components/feature-grid";
+import { FeatureGrid, SelectionSummary, type FeatureOption, type PackageOption } from "@/components/feature-grid";
 import { PriceInput } from "@/components/price-input";
 import { Field, SubmitButton } from "@/components/ui";
 import { useResultToast } from "@/components/use-result-toast";
@@ -30,13 +30,14 @@ export function PackageForm({ pkg, features }: { pkg: PackageOption | null; feat
         </Field>
       </section>
 
-      <section className="card space-y-3 @container">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* Same layout as the features tab of a site: the live selection card docks on the right. */}
+      <div className="grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]">
+        <SelectionSummary features={features} selected={selected} applied={null} />
+        <section className="card space-y-3 @container">
           <h2 className="m-0 font-bold">قابلیت‌های بسته</h2>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">{selected.size.toLocaleString("fa-IR")} قابلیت انتخاب شده</span>
-        </div>
-        <FeatureGrid features={features} selected={selected} onChange={setSelected} />
-      </section>
+          <FeatureGrid features={features} selected={selected} onChange={setSelected} />
+        </section>
+      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <SubmitButton>{pkg ? "ذخیره بسته" : "افزودن بسته"}</SubmitButton>
