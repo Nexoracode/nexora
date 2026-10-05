@@ -40,26 +40,26 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
           featureKeys: site.features.map((f) => f.featureKey),
         }}
         infoTop={<SiteDangerZone siteId={site.id} keyPrefix={site.keyPrefix} />}
-        extraTabs={[
-          {
-            id: "history",
-            label: "تاریخچه",
-            badge: site.events.length,
-            content: (
-              <section className="card">
-                {site.events.length === 0 ? (
-                  <p className="m-0 text-sm text-slate-500">رویدادی ثبت نشده است.</p>
-                ) : (
-                  <ul className="m-0 list-none divide-y divide-slate-100 p-0 text-sm">
-                    {site.events.map((event) => (
-                      <li key={event.id} className="flex justify-between gap-4 py-2.5"><span>{event.message}</span><span className="shrink-0 text-xs text-slate-500">{formatDateTime(event.createdAt)}</span></li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            ),
-          },
-        ]}
+        infoAside={
+          <section className="card" aria-label="تاریخچه">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="m-0 text-sm font-bold">تاریخچه</h2>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{site.events.length.toLocaleString("fa-IR")}</span>
+            </div>
+            {site.events.length === 0 ? (
+              <p className="m-0 text-sm text-slate-500">رویدادی ثبت نشده است.</p>
+            ) : (
+              <ul className="m-0 max-h-[32rem] list-none divide-y divide-slate-100 overflow-y-auto p-0 text-sm">
+                {site.events.map((event) => (
+                  <li key={event.id} className="py-2.5">
+                    <p className="m-0 leading-6">{event.message}</p>
+                    <p className="m-0 mt-0.5 text-xs text-slate-500">{formatDateTime(event.createdAt)}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        }
       />
     </div>
   );

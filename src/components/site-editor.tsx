@@ -30,7 +30,7 @@ const LIMITS = { domain: 191, clientName: 120, clientPhone: 20, notes: 1000 } as
 
 export type ExtraTab = { id: string; label: string; badge?: number; content: ReactNode };
 
-export function SiteEditor({ action, features, packages, site = emptySite, clientNames, mode, extraTabs = [], infoTop }: {
+export function SiteEditor({ action, features, packages, site = emptySite, clientNames, mode, extraTabs = [], infoTop, infoAside }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   features: FeatureOption[];
   packages: PackageOption[];
@@ -41,6 +41,8 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
   extraTabs?: ExtraTab[];
   /** Content above the form on the info tab; it holds its own forms, so it cannot live inside this one. */
   infoTop?: ReactNode;
+  /** Display-only card shown beside the info form (the site history). */
+  infoAside?: ReactNode;
 }) {
   const [state, formAction] = useActionState(action, {});
   const [selected, setSelected] = useState(() => new Set(site.featureKeys));
@@ -92,6 +94,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
 
       <form action={formAction} className="space-y-5">
         <TabPanel id="info" value={tab} idPrefix={idPrefix}>
+          <div className={infoAside ? "grid items-start gap-5 xl:grid-cols-[minmax(0,52rem)_minmax(20rem,1fr)]" : ""}>
           <section className="card grid max-w-4xl gap-x-4 sm:grid-cols-2">
             <Field label="دامنه سایت" htmlFor="domain" error={errors.domain} hint="مثلاً shop.example.ir">
               <input id="domain" name="domain" dir="ltr" defaultValue={site.domain} maxLength={LIMITS.domain} className="input text-left" {...invalid("domain")} />
@@ -118,6 +121,8 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
               </Field>
             </div>
           </section>
+          {infoAside}
+          </div>
         </TabPanel>
 
         <TabPanel id="features" value={tab} idPrefix={idPrefix}>
