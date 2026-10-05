@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { Pencil, Power, PowerOff, X } from "lucide-react";
+import { Pencil, Power, PowerOff } from "lucide-react";
 import { toggleFeatureActiveAction } from "@/app/actions";
 import type { FeatureOption } from "@/components/feature-grid";
 import { ConfirmForm } from "@/components/confirm-form";
@@ -74,10 +74,7 @@ export function FeaturesTable({ features }: { features: FeatureOption[] }) {
                 {isOpen && (
                   <tr className="border-t border-indigo-100 bg-indigo-50/40">
                     <td colSpan={5} className="px-4 py-4">
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <h2 className="m-0 text-sm font-bold">{feature.title}</h2>
-                        <button type="button" className="btn btn-ghost !px-2.5" aria-label="بستن جزئیات" onClick={() => toggle(feature.key)}><X size={16} aria-hidden /></button>
-                      </div>
+                      <h2 className="m-0 mb-3 text-sm font-bold">{feature.title}</h2>
                       <dl className="m-0 grid gap-4 text-sm sm:grid-cols-[1fr_auto]">
                         <div>
                           <dt className="text-xs text-slate-500">توضیح برای مشتری</dt>
