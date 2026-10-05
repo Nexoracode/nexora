@@ -145,8 +145,14 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
           </div>
         </TabPanel>
 
-        <div hidden={!editsForm}>
-          <SubmitButton>{mode === "create" ? "ثبت سایت و ساخت کلید" : "ذخیره تغییرات"}</SubmitButton>
+        {/* Stays at the bottom edge while the long features tab scrolls, so saving is always one click away. */}
+        <div hidden={!editsForm} className="sticky bottom-4 z-20">
+          <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
+            <SubmitButton>{mode === "create" ? "ثبت سایت و ساخت کلید" : "ذخیره تغییرات"}</SubmitButton>
+            <p className="m-0 text-sm text-slate-500">
+              {selected.size.toLocaleString("fa-IR")} قابلیت انتخاب شده · {formatToman(total)}
+            </p>
+          </div>
         </div>
       </form>
 
