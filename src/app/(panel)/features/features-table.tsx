@@ -75,14 +75,10 @@ export function FeaturesTable({ features }: { features: FeatureOption[] }) {
                   <tr className="border-t border-indigo-100 bg-indigo-50/40">
                     <td colSpan={5} className="px-4 py-4">
                       <h2 className="m-0 mb-3 text-sm font-bold">{feature.title}</h2>
-                      <dl className="m-0 grid gap-4 text-sm sm:grid-cols-[1fr_auto]">
+                      <dl className="m-0 text-sm">
                         <div>
                           <dt className="text-xs text-slate-500">توضیح برای مشتری</dt>
                           <dd className="m-0 mt-1 leading-7">{feature.description || <span className="text-slate-400">توضیحی ثبت نشده است.</span>}</dd>
-                        </div>
-                        <div className="sm:text-end">
-                          <dt className="text-xs text-slate-500">قیمت</dt>
-                          <dd className="m-0 mt-1 font-bold">{feature.price > 0 ? formatToman(feature.price) : "تعیین نشده"}</dd>
                         </div>
                       </dl>
                     </td>
