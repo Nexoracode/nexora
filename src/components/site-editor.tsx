@@ -123,7 +123,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
                 {contract > 0 && <span className={contract >= total ? "text-green-700" : "text-amber-700"}> · قرارداد {formatToman(contract)}</span>}
               </p>
             </div>
-            <PackagePicker packages={packages} selected={selected} onApply={(pkg) => {
+            <PackagePicker packages={packages} features={features} selected={selected} onApply={(pkg) => {
               setBeforePackage((prev) => prev ?? { selected: new Set(selected), price });
               setSelected(new Set(pkg.featureKeys));
               if (!price) setPrice(String(pkg.price || ""));

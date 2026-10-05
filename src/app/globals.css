@@ -76,3 +76,20 @@ body {
   background: #fff;
   color: #b91c1c;
 }
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+}
+
+.slide-in-right {
+  animation: slide-in-right 0.18s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-in-right {
+    animation: none;
+  }
+}

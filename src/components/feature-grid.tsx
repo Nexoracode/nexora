@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, ChevronDown, X } from "lucide-react";
 import { formatToman } from "@/lib/format";
 
 export type FeatureOption = { key: string; title: string; description: string; group: string; price: number; isActive: boolean };
@@ -63,35 +63,65 @@ export function FeatureGrid({ features, selected, onChange }: { features: Featur
   );
 }
 
+type AppliedPackage = { pkg: PackageOption; added: string[]; removed: string[] };
+
 /**
  * Ready-made packages, behind a checkbox: the list only shows once "start from a package" is on.
- * Choosing a card ticks exactly its features in one go; the card that matches the current
- * selection stays highlighted, and when nothing matches the selection reads as "custom".
+ * Choosing a card ticks exactly its features in one go and opens a side card that lists what the
+ * package selected (and what it added or removed compared with before), since the grouped
+ * checkboxes below may be folded. The card that matches the current selection stays highlighted;
+ * when nothing matches the selection reads as "custom".
  * `onUndo` (when given) puts the selection back to how it was before the first package was applied;
  * it runs from the button and also when the checkbox is switched off.
  */
-export function PackagePicker({ packages, selected, onApply, onUndo }: { packages: PackageOption[]; selected: ReadonlySet<string>; onApply: (pkg: PackageOption) => void; onUndo?: () => void }) {
+export function PackagePicker({ packages, features, selected, onApply, onUndo }: { packages: PackageOption[]; features: FeatureOption[]; selected: ReadonlySet<string>; onApply: (pkg: PackageOption) => void; onUndo?: () => void }) {
   const [enabled, setEnabled] = useState(false);
+  const [applied, setApplied] = useState<AppliedPackage | null>(null);
+  const titleByKey = useMemo(() => new Map(features.map((feature) => [feature.key, feature.title])), [features]);
+
+  useEffect(() => {
+    if (!applied) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setApplied(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [applied]);
+
   if (packages.length === 0) return null;
   const matches = (pkg: PackageOption) => pkg.featureKeys.length === selected.size && pkg.featureKeys.every((key) => selected.has(key));
   const current = packages.find(matches);
+
+  const apply = (pkg: PackageOption) => {
+    const next = new Set(pkg.featureKeys);
+    setApplied({ pkg, added: pkg.featureKeys.filter((key) => !selected.has(key)), removed: [...selected].filter((key) => !next.has(key)) });
+    onApply(pkg);
+  };
+  const undo = () => {
+    setApplied(null);
+    onUndo?.();
+  };
+  const title = (key: string) => titleByKey.get(key) ?? key;
 
   return (
     <div className="rounded-xl bg-slate-50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="flex cursor-pointer items-start gap-3">
-          <input type="checkbox" checked={enabled} onChange={(event) => {
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(event) => {
               setEnabled(event.target.checked);
               // Turning the option off drops whatever the packages changed.
-              if (!event.target.checked) onUndo?.();
-            }} className="mt-1 size-4 accent-indigo-600" />
+              if (!event.target.checked) undo();
+            }}
+            className="mt-1 size-4 accent-indigo-600"
+          />
           <span>
             <span className="block text-sm font-bold">شروع با یک بسته آماده</span>
             <span className="block text-xs text-slate-500">با انتخاب بسته، قابلیت‌های آن یک‌جا تیک می‌خورد. بعد می‌توانید دستی کم و زیاد کنید.</span>
           </span>
         </label>
         {onUndo && (
-          <button type="button" onClick={onUndo} className="btn btn-ghost !px-3 !py-1.5 !text-xs">بازگرداندن به حالت قبل</button>
+          <button type="button" onClick={undo} className="btn btn-ghost !px-3 !py-1.5 !text-xs">بازگرداندن به حالت قبل</button>
         )}
       </div>
 
@@ -108,7 +138,7 @@ export function PackagePicker({ packages, selected, onApply, onUndo }: { package
                   key={pkg.id}
                   type="button"
                   aria-pressed={active}
-                  onClick={() => onApply(pkg)}
+                  onClick={() => apply(pkg)}
                   className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-start transition-colors ${active ? "border-brand bg-indigo-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
                 >
                   <span className="min-w-0">
@@ -121,6 +151,41 @@ export function PackagePicker({ packages, selected, onApply, onUndo }: { package
             })}
           </div>
         </div>
+      )}
+
+      {enabled && applied && (
+        <aside
+          aria-label={`قابلیت‌های بستهٔ ${applied.pkg.name}`}
+          // Physical right edge: the menu sits on the right too, so on desktop the card opens just beside it.
+          className="slide-in-right fixed right-4 top-20 z-30 flex max-h-[calc(100vh-7rem)] w-80 max-w-[calc(100vw-2rem)] flex-col rounded-2xl border border-slate-200 bg-white shadow-xl lg:right-[18rem]"
+        >
+          <header className="flex items-start justify-between gap-3 border-b border-slate-100 p-4">
+            <div className="min-w-0">
+              <h3 className="m-0 truncate text-sm font-bold">بستهٔ {applied.pkg.name}</h3>
+              <p className="m-0 mt-1 text-xs text-slate-500">{applied.pkg.featureKeys.length.toLocaleString("fa-IR")} قابلیت انتخاب شد · {formatToman(applied.pkg.price)}</p>
+            </div>
+            <button type="button" aria-label="بستن" onClick={() => setApplied(null)} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X size={16} aria-hidden /></button>
+          </header>
+          <div className="space-y-4 overflow-y-auto p-4">
+            <ul className="m-0 list-none space-y-1.5 p-0 text-sm">
+              {applied.pkg.featureKeys.map((key) => (
+                <li key={key} className="flex items-center gap-2">
+                  <Check size={14} aria-hidden className="shrink-0 text-green-600" />
+                  <span className="flex-1">{title(key)}</span>
+                  {applied.added.includes(key) && <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-brand">جدید</span>}
+                </li>
+              ))}
+            </ul>
+            {applied.removed.length > 0 && (
+              <div>
+                <p className="m-0 mb-1.5 text-xs font-bold text-slate-500">برداشته شد ({applied.removed.length.toLocaleString("fa-IR")})</p>
+                <ul className="m-0 list-none space-y-1 p-0 text-xs text-slate-400 line-through">
+                  {applied.removed.map((key) => <li key={key}>{title(key)}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
+        </aside>
       )}
     </div>
   );
