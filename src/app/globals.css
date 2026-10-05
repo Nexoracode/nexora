@@ -25,6 +25,12 @@ body {
   outline: none;
 }
 
+/* Every single-line control (text, price, select, date, suggestions) shares one height; textareas stay free. */
+input.input,
+button.input {
+  height: 2.75rem;
+}
+
 .input:focus {
   border-color: var(--color-brand);
 }
