@@ -92,7 +92,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
 
       <form action={formAction} className="space-y-5">
         <TabPanel id="info" value={tab} idPrefix={idPrefix}>
-          <section className="card grid gap-x-4 sm:grid-cols-2">
+          <section className="card grid max-w-4xl gap-x-4 sm:grid-cols-2">
             <Field label="دامنه سایت" htmlFor="domain" error={errors.domain} hint="مثلاً shop.example.ir">
               <input id="domain" name="domain" dir="ltr" defaultValue={site.domain} maxLength={LIMITS.domain} className="input text-left" {...invalid("domain")} />
             </Field>
@@ -124,7 +124,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
           <div className={applied ? "grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]" : ""}>
             {/* First in the markup, so it docks on the right in this right-to-left layout and the form moves aside. */}
             {applied && <PackageSummary applied={applied} features={features} closing={closingSummary} onClose={() => setClosingSummary(true)} onClosed={onSummaryClosed} />}
-          <section className="card space-y-4">
+          <section className="card @container space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="m-0 font-bold">قابلیت‌های فعال</h2>
               <p className="m-0 text-sm">
