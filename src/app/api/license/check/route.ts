@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { getOnlinePaymentConfig } from "@/lib/payment-config";
 import { signLicenseToken } from "@/lib/license-token";
 import { authenticateSite } from "@/lib/site-auth";
 
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
   );
   const [catalog, owner, pending, packages] = await Promise.all([
     db.feature.findMany({ orderBy: { sortOrder: "asc" }, select: { key: true, title: true, description: true, group: true, price: true, isActive: true } }),
-    db.ownerSettings.findUnique({ where: { id: "main" }, select: { holderName: true, cardNumber: true, sheba: true, bankName: true, contactPhone: true, note: true, onlineMerchantId: true } }),
+    db.ownerSettings.findUnique({ where: { id: "main" }, select: { holderName: true, cardNumber: true, sheba: true, bankName: true, contactPhone: true, note: true } }),
     db.purchaseRequest.findMany({ where: { siteId: site.id, status: "PENDING" }, select: { featureKey: true, packageId: true } }),
     db.package.findMany({ orderBy: { price: "asc" }, select: { id: true, name: true, price: true, features: { select: { featureKey: true } } } }),
   ]);
@@ -36,9 +37,9 @@ export async function POST(request: Request) {
   return NextResponse.json({
     token,
     catalog: catalog.map((f) => ({ key: f.key, title: f.title, description: f.description ?? "", group: f.group, price: Number(f.price), isActive: f.isActive })),
+    owner,
     // The merchant id never leaves the panel; sites only learn whether paying online is possible.
-    owner: owner ? { holderName: owner.holderName, cardNumber: owner.cardNumber, sheba: owner.sheba, bankName: owner.bankName, contactPhone: owner.contactPhone, note: owner.note } : null,
-    onlineEnabled: Boolean(owner?.onlineMerchantId),
+    onlineEnabled: getOnlinePaymentConfig() !== null,
     pending: pending.flatMap((p) => (p.featureKey ? [p.featureKey] : [])),
     pendingPackages: pending.flatMap((p) => (p.packageId ? [p.packageId] : [])),
     packages: packages.map((p) => ({ id: p.id, name: p.name, price: Number(p.price), featureKeys: p.features.map((f) => f.featureKey) })),

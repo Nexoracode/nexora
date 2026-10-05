@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { getOnlinePaymentConfig } from "@/lib/payment-config";
 import { normalizeDomain } from "@/lib/license-token";
 import { tomanToRials, upgradeAmount } from "@/lib/pricing";
 import { authenticateSite } from "@/lib/site-auth";
@@ -31,8 +32,8 @@ export async function POST(request: Request) {
   // The buyer is sent back to the site that asked, never to an address of someone else's choosing.
   if (normalizeDomain(new URL(returnUrl).host) !== normalizeDomain(site.domain)) return fail(400, "آدرس بازگشت نامعتبر است.");
 
-  const owner = await db.ownerSettings.findUnique({ where: { id: "main" }, select: { onlineMerchantId: true, onlineSandbox: true } });
-  if (!owner?.onlineMerchantId) return fail(409, "پرداخت آنلاین فعال نیست؛ از کارت‌به‌کارت استفاده کنید.");
+  const payment = getOnlinePaymentConfig();
+  if (!payment) return fail(409, "پرداخت آنلاین فعال نیست؛ از کارت‌به‌کارت استفاده کنید.");
 
   const owned = new Set(site.features.map((f) => f.featureKey));
   let amountToman: number;
@@ -62,12 +63,12 @@ export async function POST(request: Request) {
     select: { id: true },
   });
   try {
-    const payment = await requestPayment(
-      { merchantId: owner.onlineMerchantId, sandbox: owner.onlineSandbox },
+    const gateway = await requestPayment(
+      payment,
       { amountRials: tomanToRials(amountToman), callbackUrl: `${env.APP_URL.replace(/\/$/, "")}/api/pay/callback?r=${purchase.id}`, description: `خرید ${title}` },
     );
-    await db.purchaseRequest.update({ where: { id: purchase.id }, data: { authority: payment.authority }, select: { id: true } });
-    return NextResponse.json({ redirectUrl: payment.redirectUrl });
+    await db.purchaseRequest.update({ where: { id: purchase.id }, data: { authority: gateway.authority }, select: { id: true } });
+    return NextResponse.json({ redirectUrl: gateway.redirectUrl });
   } catch {
     await db.purchaseRequest.update({ where: { id: purchase.id }, data: { status: "FAILED", resolvedAt: new Date() }, select: { id: true } });
     return fail(502, "اتصال به درگاه پرداخت برقرار نشد؛ دوباره تلاش کنید.");

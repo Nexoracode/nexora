@@ -5,10 +5,10 @@ import { saveOwnerSettingsAction } from "@/app/actions";
 import { useResultToast } from "@/components/use-result-toast";
 import { Field, SubmitButton } from "@/components/ui";
 
-type Defaults = { holderName: string; cardNumber: string; sheba: string; bankName: string; contactPhone: string; note: string; onlineMerchantId: string; onlineSandbox: boolean };
+type Defaults = { holderName: string; cardNumber: string; sheba: string; bankName: string; contactPhone: string; note: string };
 
 // Limits mirror ownerSchema in src/app/actions.ts and the OwnerSettings columns in prisma/schema.prisma.
-const LIMITS = { holderName: 120, cardNumber: 19, sheba: 26, bankName: 60, contactPhone: 11, note: 500, onlineMerchantId: 36 } as const;
+const LIMITS = { holderName: 120, cardNumber: 19, sheba: 26, bankName: 60, contactPhone: 11, note: 500 } as const;
 
 export function OwnerForm({ defaults }: { defaults: Defaults }) {
   const [state, action] = useActionState(saveOwnerSettingsAction, {});
@@ -33,10 +33,6 @@ export function OwnerForm({ defaults }: { defaults: Defaults }) {
         <Field label="شماره تماس" htmlFor="contactPhone" error={errors.contactPhone} hint="09xxxxxxxxx">
           <input id="contactPhone" name="contactPhone" dir="ltr" inputMode="tel" defaultValue={defaults.contactPhone} maxLength={LIMITS.contactPhone} className="input text-left" {...a11y("contactPhone")} />
         </Field>
-        <Field label="شناسهٔ پذیرنده زرین‌پال" htmlFor="onlineMerchantId" error={errors.onlineMerchantId} hint="برای گزینهٔ پرداخت آنلاین؛ خالی یعنی غیرفعال">
-          <input id="onlineMerchantId" name="onlineMerchantId" dir="ltr" defaultValue={defaults.onlineMerchantId} maxLength={LIMITS.onlineMerchantId} className="input text-left" {...a11y("onlineMerchantId")} />
-        </Field>
-        <label className="mb-4 flex items-center gap-2 self-center text-sm"><input type="checkbox" name="onlineSandbox" defaultChecked={defaults.onlineSandbox} className="size-4 accent-indigo-600" />حالت آزمایشی (sandbox)</label>
         <div className="sm:col-span-2">
           <Field label="توضیح برای مشتری" htmlFor="note" error={errors.note} hint={`حداکثر ${LIMITS.note} نویسه`}>
             <textarea id="note" name="note" rows={3} defaultValue={defaults.note} maxLength={LIMITS.note} className="input" {...a11y("note")} />

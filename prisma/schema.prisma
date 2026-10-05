@@ -134,9 +134,6 @@ model OwnerSettings {
   bankName     String? @db.VarChar(60)
   contactPhone String? @db.VarChar(11)
   note         String? @db.VarChar(500)
-  // Zarinpal credentials for the "pay online" option; never sent to customer sites.
-  onlineMerchantId String? @db.VarChar(36)
-  onlineSandbox    Boolean @default(false)
 }
 
 // A customer site asked to unlock a feature after paying; approving it adds the feature to the site.

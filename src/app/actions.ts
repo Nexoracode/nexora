@@ -241,8 +241,6 @@ const ownerSchema = z.object({
   bankName: z.string().trim().max(60, "نام بانک حداکثر ۶۰ نویسه است."),
   contactPhone: z.string().regex(/^(09\d{9})?$/, "شماره تماس باید به‌صورت 09xxxxxxxxx و ۱۱ رقم باشد."),
   note: z.string().trim().max(500, "توضیح حداکثر ۵۰۰ نویسه است."),
-  onlineMerchantId: z.string().trim().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})?$/, "شناسهٔ پذیرنده باید یک UUID معتبر باشد."),
-  onlineSandbox: z.boolean(),
 });
 
 export async function saveOwnerSettingsAction(_: FormState, formData: FormData): Promise<FormState> {
@@ -254,16 +252,13 @@ export async function saveOwnerSettingsAction(_: FormState, formData: FormData):
     bankName: formData.get("bankName") ?? "",
     contactPhone: digitsOnly(formData.get("contactPhone")),
     note: formData.get("note") ?? "",
-    onlineMerchantId: formData.get("onlineMerchantId") ?? "",
-    onlineSandbox: formData.get("onlineSandbox") === "on",
   });
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
     for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
     return formError(fieldErrors);
   }
-  const { onlineSandbox, ...texts } = parsed.data;
-  const data = { ...Object.fromEntries(Object.entries(texts).map(([key, value]) => [key, value || null])), onlineSandbox };
+  const data = Object.fromEntries(Object.entries(parsed.data).map(([key, value]) => [key, value || null]));
   await db.ownerSettings.upsert({ where: { id: "main" }, create: { id: "main", ...data }, update: data });
   revalidatePath("/settings");
   return { saved: true };

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getOnlinePaymentConfig } from "@/lib/payment-config";
 import { grantPurchase } from "@/lib/purchases";
 import { tomanToRials } from "@/lib/pricing";
 import { verifyPayment } from "@/lib/zarinpal";
@@ -34,10 +35,10 @@ export async function GET(request: Request) {
   };
   if (params.get("Status") !== "OK" || !authority || authority !== purchase.authority || purchase.amount === null) return fail();
 
-  const owner = await db.ownerSettings.findUnique({ where: { id: "main" }, select: { onlineMerchantId: true, onlineSandbox: true } });
-  if (!owner?.onlineMerchantId) return fail();
+  const payment = getOnlinePaymentConfig();
+  if (!payment) return fail();
   try {
-    const { refId } = await verifyPayment({ merchantId: owner.onlineMerchantId, sandbox: owner.onlineSandbox }, { amountRials: tomanToRials(Number(purchase.amount)), authority });
+    const { refId } = await verifyPayment(payment, { amountRials: tomanToRials(Number(purchase.amount)), authority });
     await grantPurchase(purchase.id, "AWAITING_PAYMENT", { refId });
     return backTo(purchase.returnUrl, "success");
   } catch {
