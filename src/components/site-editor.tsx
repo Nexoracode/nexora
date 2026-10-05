@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { FormState } from "@/app/actions";
 import { formatToman, normalizeDigits } from "@/lib/format";
-import { FeatureGrid, PackagePicker, type FeatureOption, type PackageOption } from "./feature-grid";
+import { FeatureGrid, PackagePicker, PackageSummary, type AppliedPackage, type FeatureOption, type PackageOption } from "./feature-grid";
 import { JalaliDateField } from "./jalali-date-field";
 import { Select } from "./select";
 import { PriceInput } from "./price-input";
@@ -48,6 +48,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
   const [price, setPrice] = useState(String(site.contractPrice || ""));
   // How things were before the first package was applied, so one click can bring them back.
   const [beforePackage, setBeforePackage] = useState<{ selected: Set<string>; price: string } | null>(null);
+  const [applied, setApplied] = useState<AppliedPackage | null>(null);
   const [tab, setTab] = useState("info");
   const errors = state.fieldErrors ?? {};
 
@@ -115,6 +116,9 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
         </TabPanel>
 
         <TabPanel id="features" value={tab} idPrefix={idPrefix}>
+          <div className={applied ? "grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]" : ""}>
+            {/* First in the markup, so it docks on the right in this right-to-left layout and the form moves aside. */}
+            {applied && <PackageSummary applied={applied} features={features} onClose={() => setApplied(null)} />}
           <section className="card space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="m-0 font-bold">قابلیت‌های فعال</h2>
@@ -123,7 +127,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
                 {contract > 0 && <span className={contract >= total ? "text-green-700" : "text-amber-700"}> · قرارداد {formatToman(contract)}</span>}
               </p>
             </div>
-            <PackagePicker packages={packages} features={features} selected={selected} onApply={(pkg) => {
+            <PackagePicker packages={packages} selected={selected} onAppliedChange={setApplied} onApply={(pkg) => {
               setBeforePackage((prev) => prev ?? { selected: new Set(selected), price });
               setSelected(new Set(pkg.featureKeys));
               if (!price) setPrice(String(pkg.price || ""));
@@ -132,6 +136,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
           />
             <FeatureGrid features={features} selected={selected} onChange={setSelected} />
           </section>
+          </div>
         </TabPanel>
 
         <div hidden={!editsForm}>
