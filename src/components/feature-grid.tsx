@@ -67,7 +67,8 @@ export function FeatureGrid({ features, selected, onChange }: { features: Featur
  * Ready-made packages, behind a checkbox: the list only shows once "start from a package" is on.
  * Choosing a card ticks exactly its features in one go; the card that matches the current
  * selection stays highlighted, and when nothing matches the selection reads as "custom".
- * `onUndo` (when given) puts the selection back to how it was before the first package was applied.
+ * `onUndo` (when given) puts the selection back to how it was before the first package was applied;
+ * it runs from the button and also when the checkbox is switched off.
  */
 export function PackagePicker({ packages, selected, onApply, onUndo }: { packages: PackageOption[]; selected: ReadonlySet<string>; onApply: (pkg: PackageOption) => void; onUndo?: () => void }) {
   const [enabled, setEnabled] = useState(false);
@@ -79,7 +80,11 @@ export function PackagePicker({ packages, selected, onApply, onUndo }: { package
     <div className="rounded-xl bg-slate-50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="flex cursor-pointer items-start gap-3">
-          <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} className="mt-1 size-4 accent-indigo-600" />
+          <input type="checkbox" checked={enabled} onChange={(event) => {
+              setEnabled(event.target.checked);
+              // Turning the option off drops whatever the packages changed.
+              if (!event.target.checked) onUndo?.();
+            }} className="mt-1 size-4 accent-indigo-600" />
           <span>
             <span className="block text-sm font-bold">شروع با یک بسته آماده</span>
             <span className="block text-xs text-slate-500">با انتخاب بسته، قابلیت‌های آن یک‌جا تیک می‌خورد. بعد می‌توانید دستی کم و زیاد کنید.</span>
