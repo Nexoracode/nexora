@@ -94,7 +94,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
 
       <form action={formAction} className="space-y-5">
         <TabPanel id="info" value={tab} idPrefix={idPrefix}>
-          <div className={infoAside ? "grid items-start gap-5 xl:grid-cols-[minmax(0,52rem)_minmax(20rem,1fr)]" : ""}>
+          <div className={infoAside ? "grid gap-5 xl:grid-cols-[minmax(0,52rem)_minmax(20rem,1fr)]" : ""}>
           <section className="card grid max-w-4xl gap-x-4 sm:grid-cols-2">
             <Field label="دامنه سایت" htmlFor="domain" error={errors.domain} hint="مثلاً shop.example.ir">
               <input id="domain" name="domain" dir="ltr" defaultValue={site.domain} maxLength={LIMITS.domain} className="input text-left" {...invalid("domain")} />

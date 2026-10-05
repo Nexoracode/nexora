@@ -41,15 +41,18 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
         }}
         infoTop={<SiteDangerZone siteId={site.id} keyPrefix={site.keyPrefix} />}
         infoAside={
-          <section className="card" aria-label="تاریخچه">
-            <div className="mb-3 flex items-center justify-between gap-3">
+          // On wide screens the card is exactly as tall as the form beside it and its list scrolls inside;
+          // when stacked it simply takes its own height.
+          <div className="relative">
+          <section className="card flex flex-col xl:absolute xl:inset-0" aria-label="تاریخچه">
+            <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
               <h2 className="m-0 text-sm font-bold">تاریخچه</h2>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{site.events.length.toLocaleString("fa-IR")}</span>
             </div>
             {site.events.length === 0 ? (
               <p className="m-0 text-sm text-slate-500">رویدادی ثبت نشده است.</p>
             ) : (
-              <ul className="m-0 max-h-[32rem] list-none divide-y divide-slate-100 overflow-y-auto p-0 text-sm">
+              <ul className="m-0 max-h-[32rem] min-h-0 list-none divide-y divide-slate-100 overflow-y-auto p-0 text-sm xl:max-h-none xl:flex-1">
                 {site.events.map((event) => (
                   <li key={event.id} className="py-2.5">
                     <p className="m-0 leading-6">{event.message}</p>
@@ -59,6 +62,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
               </ul>
             )}
           </section>
+          </div>
         }
       />
     </div>
