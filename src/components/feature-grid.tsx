@@ -165,7 +165,7 @@ export function SelectionSummary({ features, selected, baseline, currentPrice, a
   const addedKeys = new Set(addedFeatures.map((feature) => feature.key));
 
   const rows: Array<{ label: string; value: string; tone?: string }> = [
-    ...(currentPrice !== null ? [{ label: "قیمت فعلی", value: formatToman(currentPrice) }] : []),
+    ...(currentPrice !== null ? [{ label: "قیمت فعلی", value: currentPrice > 0 ? formatToman(currentPrice) : "ثبت نشده" }] : []),
     ...(added > 0 ? [{ label: "افزوده‌شده", value: `+ ${formatToman(added)}`, tone: "text-green-700" }] : []),
     ...(removed > 0 ? [{ label: "برداشته‌شده", value: `− ${formatToman(removed)}`, tone: "text-red-600" }] : []),
   ];
