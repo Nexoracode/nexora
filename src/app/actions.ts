@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSession, destroySession, passwordMatches, requireOwnerAction } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { notifySites } from "@/lib/notify-sites";
 import { grantPurchase } from "@/lib/purchases";
 import { generateLicenseKey, normalizeDomain } from "@/lib/license-token";
 import { normalizeDigits } from "@/lib/format";
@@ -143,6 +145,7 @@ export async function updateSiteAction(siteId: string, _: FormState, formData: F
   });
   revalidatePath("/");
   revalidatePath(`/sites/${siteId}`);
+  after(() => notifySites(siteId));
   return { saved: true };
 }
 
@@ -191,6 +194,7 @@ export async function saveFeatureAction(key: string, _: FormState, formData: For
   const { description, ...rest } = parsed.data;
   await db.feature.update({ where: { key }, data: { ...rest, description: description || null }, select: { key: true } });
   revalidatePath("/features");
+  after(() => notifySites());
   return { saved: true };
 }
 
@@ -201,6 +205,7 @@ export async function toggleFeatureActiveAction(key: string) {
   if (!feature) return;
   await db.feature.update({ where: { key }, data: { isActive: !feature.isActive }, select: { key: true } });
   revalidatePath("/features");
+  after(() => notifySites());
 }
 
 const packageSchema = z.object({ name: z.string().trim().min(1, "نام بسته را وارد کنید.").max(120, "نام بسته حداکثر ۱۲۰ نویسه است."), price: priceField });
@@ -218,10 +223,12 @@ export async function savePackageAction(packageId: string | null, _: FormState, 
     await db.package.update({ where: { id: packageId }, data: { ...parsed.data, features: { deleteMany: {}, create: features } }, select: { id: true } });
     revalidatePath("/packages");
     revalidatePath(`/packages/${packageId}`);
+    after(() => notifySites());
     return { saved: true };
   }
   await db.package.create({ data: { ...parsed.data, features: { create: features } }, select: { id: true } });
   revalidatePath("/packages");
+  after(() => notifySites());
   redirect("/packages");
 }
 
@@ -229,6 +236,7 @@ export async function deletePackageAction(packageId: string) {
   await requireOwnerAction();
   await db.package.delete({ where: { id: packageId }, select: { id: true } });
   revalidatePath("/packages");
+  after(() => notifySites());
   redirect("/packages");
 }
 
@@ -261,6 +269,7 @@ export async function saveOwnerSettingsAction(_: FormState, formData: FormData):
   const data = Object.fromEntries(Object.entries(parsed.data).map(([key, value]) => [key, value || null]));
   await db.ownerSettings.upsert({ where: { id: "main" }, create: { id: "main", ...data }, update: data });
   revalidatePath("/settings");
+  after(() => notifySites());
   return { saved: true };
 }
 
@@ -279,4 +288,6 @@ export async function resolvePurchaseAction(requestId: string, decision: "APPROV
   }
   revalidatePath("/requests");
   revalidatePath("/");
+  const request = await db.purchaseRequest.findUnique({ where: { id: requestId }, select: { siteId: true } });
+  if (request) after(() => notifySites(request.siteId));
 }

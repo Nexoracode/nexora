@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { notifySites } from "@/lib/notify-sites";
 import { getOnlinePaymentConfig } from "@/lib/payment-config";
 import { grantPurchase } from "@/lib/purchases";
 import { tomanToRials } from "@/lib/pricing";
@@ -40,6 +41,7 @@ export async function GET(request: Request) {
   try {
     const { refId } = await verifyPayment(payment, { amountRials: tomanToRials(Number(purchase.amount)), authority });
     await grantPurchase(purchase.id, "AWAITING_PAYMENT", { refId });
+    after(() => notifySites(purchase.site.id));
     return backTo(purchase.returnUrl, "success");
   } catch {
     return fail();

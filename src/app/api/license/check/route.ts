@@ -3,10 +3,10 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { getOnlinePaymentConfig } from "@/lib/payment-config";
-import { signLicenseToken } from "@/lib/license-token";
+import { normalizeDomain, signLicenseToken } from "@/lib/license-token";
 import { authenticateSite } from "@/lib/site-auth";
 
-const bodySchema = z.object({ licenseKey: z.string().min(8).max(100), domain: z.string().min(1).max(191) });
+const bodySchema = z.object({ licenseKey: z.string().min(8).max(100), domain: z.string().min(1).max(191), siteUrl: z.url().max(300).optional() });
 
 const reject = (status: number) => NextResponse.json({ message: "لایسنس نامعتبر است." }, { status });
 
@@ -32,7 +32,11 @@ export async function POST(request: Request) {
     db.purchaseRequest.findMany({ where: { siteId: site.id, status: "PENDING" }, select: { featureKey: true, packageId: true } }),
     db.package.findMany({ orderBy: { price: "asc" }, select: { id: true, name: true, price: true, features: { select: { featureKey: true } } } }),
   ]);
-  await db.site.update({ where: { id: site.id }, data: { lastSeenAt: new Date() }, select: { id: true } });
+  // The site tells us where to reach it. Only an address on its own registered domain is remembered, so a
+  // caller cannot point our notifications at somebody else.
+  const siteUrl = parsed.data.siteUrl ? new URL(parsed.data.siteUrl) : null;
+  const callbackUrl = siteUrl && normalizeDomain(siteUrl.host) === normalizeDomain(site.domain) ? siteUrl.origin : undefined;
+  await db.site.update({ where: { id: site.id }, data: { lastSeenAt: new Date(), ...(callbackUrl ? { callbackUrl } : {}) }, select: { id: true } });
   // Display-only extras for the customer's purchase screen; the signed token alone grants features.
   return NextResponse.json({
     token,
