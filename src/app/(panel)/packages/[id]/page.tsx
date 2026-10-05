@@ -35,7 +35,7 @@ export default async function PackageDetailsPage({ params }: { params: Promise<{
         action={
           <div className="flex items-center gap-2">
             <Link href={`/packages/${pkg.id}/edit`} className="btn btn-primary"><Pencil size={16} aria-hidden />ویرایش</Link>
-            <PackageRowActions id={pkg.id} name={pkg.name} withDetails={false} />
+            <PackageRowActions id={pkg.id} name={pkg.name} withDetails={false} withEdit={false} />
           </div>
         }
       />
