@@ -39,6 +39,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
           notes: site.notes ?? "",
           featureKeys: site.features.map((f) => f.featureKey),
         }}
+        infoTop={<SiteDangerZone siteId={site.id} keyPrefix={site.keyPrefix} />}
         extraTabs={[
           {
             id: "history",
@@ -58,7 +59,6 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
               </section>
             ),
           },
-          { id: "key", label: "کلید و حذف", content: <SiteDangerZone siteId={site.id} /> },
         ]}
       />
     </div>

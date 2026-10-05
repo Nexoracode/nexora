@@ -29,15 +29,17 @@ const LIMITS = { domain: 191, clientName: 120, clientPhone: 20, notes: 1000 } as
 
 export type ExtraTab = { id: string; label: string; badge?: number; content: ReactNode };
 
-export function SiteEditor({ action, features, packages, site = emptySite, clientNames, mode, extraTabs = [] }: {
+export function SiteEditor({ action, features, packages, site = emptySite, clientNames, mode, extraTabs = [], infoTop }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   features: FeatureOption[];
   packages: PackageOption[];
   site?: SiteDefaults;
   clientNames: string[];
   mode: "create" | "edit";
-  /** Tabs outside the form (history, key, delete); shown after the editable ones. */
+  /** Tabs outside the form (history); shown after the editable ones. */
   extraTabs?: ExtraTab[];
+  /** Content above the form on the info tab; it holds its own forms, so it cannot live inside this one. */
+  infoTop?: ReactNode;
 }) {
   const [state, formAction] = useActionState(action, {});
   const [selected, setSelected] = useState(() => new Set(site.featureKeys));
@@ -76,6 +78,8 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
         onChange={setTab}
         tabs={[{ id: "info", label: "مشخصات" }, { id: "features", label: "قابلیت‌ها", badge: selected.size }, ...extraTabs.map(({ id, label, badge }) => ({ id, label, badge }))]}
       />
+
+      {infoTop && <div hidden={tab !== "info"}>{infoTop}</div>}
 
       <form action={formAction} className="space-y-5">
         <TabPanel id="info" value={tab} idPrefix={idPrefix}>
