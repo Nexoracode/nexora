@@ -14,6 +14,8 @@ export default async function OwnerSettingsPage() {
           sheba: owner?.sheba ?? "",
           bankName: owner?.bankName ?? "",
           contactPhone: owner?.contactPhone ?? "",
+          onlineMerchantId: owner?.onlineMerchantId ?? "",
+          onlineSandbox: owner?.onlineSandbox ?? false,
           note: owner?.note ?? "",
         }}
       />

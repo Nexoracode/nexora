@@ -7,6 +7,8 @@ const schema = z.object({
   SESSION_SECRET: z.string().min(32),
   LICENSE_PRIVATE_KEY: z.string().default(""),
   LICENSE_TOKEN_DAYS: z.coerce.number().int().min(1).max(90).default(7),
+  // Public address of this panel; the payment gateway sends buyers back to it.
+  APP_URL: z.url().default("http://localhost:3001"),
 });
 
 export const env = schema.parse(process.env);

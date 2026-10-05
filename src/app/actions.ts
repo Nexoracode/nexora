@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSession, destroySession, passwordMatches, requireOwnerAction } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { grantPurchase } from "@/lib/purchases";
 import { generateLicenseKey, normalizeDomain } from "@/lib/license-token";
 import { normalizeDigits } from "@/lib/format";
 
@@ -164,16 +165,16 @@ export async function deleteSiteAction(siteId: string) {
   redirect("/");
 }
 
-const featureRowSchema = z.object({ title: z.string().trim().min(1).max(120), price: priceField });
+const featureRowSchema = z.object({ title: z.string().trim().min(1).max(120), description: z.string().trim().max(500), price: priceField });
 
 export async function saveFeaturesAction(_: FormState, formData: FormData): Promise<FormState> {
   await requireOwnerAction();
   const features = await db.feature.findMany({ select: { key: true } });
-  const rows = features.map(({ key }) => ({ key, row: featureRowSchema.safeParse({ title: formData.get(`title:${key}`), price: formData.get(`price:${key}`) }) }));
+  const rows = features.map(({ key }) => ({ key, row: featureRowSchema.safeParse({ title: formData.get(`title:${key}`), description: formData.get(`description:${key}`) ?? "", price: formData.get(`price:${key}`) }) }));
   const bad = rows.find(({ row }) => !row.success);
-  if (bad) return { error: `مقادیر قابلیت «${bad.key}» معتبر نیست؛ عنوان الزامی و مبلغ باید عدد باشد.` };
+  if (bad) return { error: `مقادیر قابلیت «${bad.key}» معتبر نیست؛ عنوان الزامی، توضیح حداکثر ۵۰۰ نویسه و مبلغ باید عدد باشد.` };
   await db.$transaction(
-    rows.flatMap(({ key, row }) => (row.success ? [db.feature.update({ where: { key }, data: { title: row.data.title, price: row.data.price }, select: { key: true } })] : [])),
+    rows.flatMap(({ key, row }) => (row.success ? [db.feature.update({ where: { key }, data: { title: row.data.title, description: row.data.description || null, price: row.data.price }, select: { key: true } })] : [])),
   );
   revalidatePath("/features");
   return { saved: true };
@@ -207,6 +208,8 @@ const ownerSchema = z.object({
   bankName: z.string().trim().max(60, "نام بانک حداکثر ۶۰ نویسه است."),
   contactPhone: z.string().regex(/^(09\d{9})?$/, "شماره تماس باید به‌صورت 09xxxxxxxxx و ۱۱ رقم باشد."),
   note: z.string().trim().max(500, "توضیح حداکثر ۵۰۰ نویسه است."),
+  onlineMerchantId: z.string().trim().regex(/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})?$/, "شناسهٔ پذیرنده باید یک UUID معتبر باشد."),
+  onlineSandbox: z.boolean(),
 });
 
 export async function saveOwnerSettingsAction(_: FormState, formData: FormData): Promise<FormState> {
@@ -218,13 +221,16 @@ export async function saveOwnerSettingsAction(_: FormState, formData: FormData):
     bankName: formData.get("bankName") ?? "",
     contactPhone: digitsOnly(formData.get("contactPhone")),
     note: formData.get("note") ?? "",
+    onlineMerchantId: formData.get("onlineMerchantId") ?? "",
+    onlineSandbox: formData.get("onlineSandbox") === "on",
   });
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
     for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
     return formError(fieldErrors);
   }
-  const data = Object.fromEntries(Object.entries(parsed.data).map(([key, value]) => [key, value || null]));
+  const { onlineSandbox, ...texts } = parsed.data;
+  const data = { ...Object.fromEntries(Object.entries(texts).map(([key, value]) => [key, value || null])), onlineSandbox };
   await db.ownerSettings.upsert({ where: { id: "main" }, create: { id: "main", ...data }, update: data });
   revalidatePath("/settings");
   return { saved: true };
@@ -232,17 +238,17 @@ export async function saveOwnerSettingsAction(_: FormState, formData: FormData):
 
 export async function resolvePurchaseAction(requestId: string, decision: "APPROVED" | "REJECTED") {
   await requireOwnerAction();
-  const request = await db.purchaseRequest.findUnique({ where: { id: requestId }, include: { feature: { select: { title: true } }, package: { select: { name: true, features: { select: { featureKey: true } } } } } });
-  if (!request || request.status !== "PENDING") return;
-  const grants = request.featureKey ? [request.featureKey] : (request.package?.features.map((f) => f.featureKey) ?? []);
-  const title = request.feature?.title ?? (request.package ? `بستهٔ ${request.package.name}` : "قابلیت");
-  await db.$transaction([
-    db.purchaseRequest.update({ where: { id: requestId }, data: { status: decision, resolvedAt: new Date() }, select: { id: true } }),
-    ...(decision === "APPROVED"
-      ? grants.map((featureKey) => db.siteFeature.upsert({ where: { siteId_featureKey: { siteId: request.siteId, featureKey } }, create: { siteId: request.siteId, featureKey }, update: {}, select: { siteId: true } }))
-      : []),
-    db.licenseEvent.create({ data: { siteId: request.siteId, type: "PURCHASE_RESOLVED", message: `خرید «${title}» ${decision === "APPROVED" ? "تأیید و فعال شد" : "رد شد"}.` } }),
-  ]);
+  if (decision === "APPROVED") {
+    await grantPurchase(requestId, "PENDING");
+  } else {
+    const request = await db.purchaseRequest.findUnique({ where: { id: requestId }, include: { feature: { select: { title: true } }, package: { select: { name: true } } } });
+    if (!request || request.status !== "PENDING") return;
+    const title = request.feature?.title ?? (request.package ? `بستهٔ ${request.package.name}` : "قابلیت");
+    await db.$transaction([
+      db.purchaseRequest.update({ where: { id: requestId }, data: { status: "REJECTED", resolvedAt: new Date() }, select: { id: true } }),
+      db.licenseEvent.create({ data: { siteId: request.siteId, type: "PURCHASE_RESOLVED", message: `خرید «${title}» رد شد.` } }),
+    ]);
+  }
   revalidatePath("/requests");
   revalidatePath("/");
 }

@@ -4,11 +4,12 @@ import { SubmitButton } from "@/components/ui";
 import { db } from "@/lib/db";
 import { formatDateTime, formatToman } from "@/lib/format";
 
-const statusLabel = { PENDING: "در انتظار", APPROVED: "تأیید شده", REJECTED: "رد شده" } as const;
-const statusClass = { PENDING: "bg-amber-100 text-amber-700", APPROVED: "bg-green-100 text-green-700", REJECTED: "bg-red-100 text-red-700" } as const;
+const statusLabel = { PENDING: "در انتظار", APPROVED: "تأیید شده", REJECTED: "رد شده", AWAITING_PAYMENT: "در انتظار پرداخت", FAILED: "ناموفق" } as const;
+const statusClass = { PENDING: "bg-amber-100 text-amber-700", APPROVED: "bg-green-100 text-green-700", REJECTED: "bg-red-100 text-red-700", AWAITING_PAYMENT: "bg-slate-100 text-slate-700", FAILED: "bg-red-100 text-red-700" } as const;
 
 export default async function RequestsPage() {
   const requests = await db.purchaseRequest.findMany({
+    where: { status: { in: ["PENDING", "APPROVED", "REJECTED"] } },
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     take: 100,
     include: { feature: { select: { title: true, price: true } }, package: { select: { name: true, price: true } }, site: { select: { id: true, domain: true, client: { select: { name: true } } } } },
@@ -27,7 +28,7 @@ export default async function RequestsPage() {
             </div>
             <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusClass[request.status]}`}>{statusLabel[request.status]}</span>
           </div>
-          <p className="text-sm">کد پیگیری: <code dir="ltr">{request.trackingCode}</code></p>
+          <p className="text-sm">{request.method === "ONLINE" ? "پرداخت آنلاین · شناسه مرجع" : "کارت‌به‌کارت · کد پیگیری"}: <code dir="ltr">{request.trackingCode}</code></p>
           {request.note && <p className="text-sm text-slate-600">{request.note}</p>}
           <p className="text-xs text-slate-500">{formatDateTime(request.createdAt)}</p>
           {request.status === "PENDING" && (

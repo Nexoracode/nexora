@@ -16,6 +16,13 @@ enum PurchaseStatus {
   PENDING
   APPROVED
   REJECTED
+  AWAITING_PAYMENT
+  FAILED
+}
+
+enum PurchaseMethod {
+  CARD_TO_CARD
+  ONLINE
 }
 
 enum LicenseEventType {
@@ -31,9 +38,10 @@ enum LicenseEventType {
 // Catalog of sellable capabilities. `key` matches LICENSE_FEATURES in the store project.
 model Feature {
   key       String   @id @db.VarChar(64)
-  title     String   @db.VarChar(120)
-  group     String   @db.VarChar(80)
-  price     Decimal  @default(0) @db.Decimal(14, 0)
+  title       String   @db.VarChar(120)
+  description String?  @db.VarChar(500)
+  group       String   @db.VarChar(80)
+  price       Decimal  @default(0) @db.Decimal(14, 0)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
@@ -124,6 +132,9 @@ model OwnerSettings {
   bankName     String? @db.VarChar(60)
   contactPhone String? @db.VarChar(11)
   note         String? @db.VarChar(500)
+  // Zarinpal credentials for the "pay online" option; never sent to customer sites.
+  onlineMerchantId String? @db.VarChar(36)
+  onlineSandbox    Boolean @default(false)
 }
 
 // A customer site asked to unlock a feature after paying; approving it adds the feature to the site.
@@ -134,8 +145,14 @@ model PurchaseRequest {
   featureKey   String?        @db.VarChar(64)
   packageId    String?
   status       PurchaseStatus @default(PENDING)
+  method       PurchaseMethod @default(CARD_TO_CARD)
   trackingCode String         @db.VarChar(60)
   note         String?        @db.VarChar(500)
+  // Online payments only: what was charged (toman), the gateway authority and reference, and where to send the buyer back.
+  amount       Decimal?       @db.Decimal(14, 0)
+  authority    String?        @unique @db.VarChar(64)
+  refId        String?        @db.VarChar(64)
+  returnUrl    String?        @db.VarChar(500)
   createdAt    DateTime       @default(now())
   resolvedAt   DateTime?
 

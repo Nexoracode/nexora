@@ -1,21 +1,24 @@
-/** Default feature catalog. Keys must match LICENSE_FEATURES in the store project. Prices start at 0 and are set in the panel. */
+/**
+ * Default feature catalog. Keys must match LICENSE_FEATURES in the store project.
+ * Titles, descriptions and prices can be edited in the panel; the seed only fills what is missing.
+ */
 export const defaultFeatures = [
-  { key: "wallet", title: "کیف پول", group: "فروش و پرداخت" },
-  { key: "card-to-card", title: "پرداخت کارت‌به‌کارت", group: "فروش و پرداخت" },
-  { key: "online-payment", title: "درگاه پرداخت آنلاین", group: "فروش و پرداخت" },
-  { key: "promotions", title: "تخفیف و پروموشن", group: "فروش و پرداخت" },
-  { key: "returns", title: "مرجوعی", group: "فروش و پرداخت" },
-  { key: "inventory", title: "انبار و رسید کالا", group: "کاتالوگ" },
-  { key: "product-import", title: "ورود گروهی محصول", group: "کاتالوگ" },
-  { key: "compare", title: "مقایسه محصولات", group: "کاتالوگ" },
-  { key: "reviews", title: "دیدگاه و امتیاز محصول", group: "کاتالوگ" },
-  { key: "gold", title: "صنف طلا (نرخ لحظه‌ای)", group: "کاتالوگ" },
-  { key: "blog", title: "وبلاگ و دیدگاه مقالات", group: "محتوا و سئو" },
-  { key: "page-builder", title: "صفحه‌ساز", group: "محتوا و سئو" },
-  { key: "seo-tools", title: "ابزار سئو", group: "محتوا و سئو" },
-  { key: "tickets", title: "تیکت پشتیبانی", group: "مشتریان" },
-  { key: "referral", title: "معرفی دوستان", group: "مشتریان" },
-  { key: "sms-campaigns", title: "پیامک و اعلان‌ها", group: "مشتریان" },
-  { key: "reports", title: "گزارش‌ها", group: "مدیریت" },
-  { key: "audit-log", title: "تاریخچه فعالیت‌ها", group: "مدیریت" },
+  { key: "wallet", title: "کیف پول", group: "فروش و پرداخت", description: "هر مشتری یک کیف پول دارد. می‌تواند آن را شارژ کند و هنگام خرید از موجودی‌اش پرداخت کند. مناسب برگشت وجه و اعتبار هدیه." },
+  { key: "card-to-card", title: "پرداخت کارت‌به‌کارت", group: "فروش و پرداخت", description: "مشتری مبلغ را به کارت شما واریز و رسید را ثبت می‌کند. شما رسید را بررسی و سفارش را تأیید می‌کنید." },
+  { key: "online-payment", title: "درگاه پرداخت آنلاین", group: "فروش و پرداخت", description: "اتصال به درگاه بانکی برای پرداخت مستقیم سفارش. وضعیت پرداخت خودکار بررسی می‌شود و سفارش پس از تأیید ثبت می‌شود." },
+  { key: "promotions", title: "تخفیف و پروموشن", group: "فروش و پرداخت", description: "کد تخفیف، تخفیف درصدی یا مبلغی، ارسال رایگان و کمپین‌های زمان‌دار، با شرط حداقل خرید و دسته‌بندی." },
+  { key: "returns", title: "مرجوعی", group: "فروش و پرداخت", description: "مشتری از صفحهٔ سفارش درخواست مرجوعی ثبت می‌کند و شما آن را بررسی، تأیید یا رد و مبلغ بازگشتی را مشخص می‌کنید." },
+  { key: "inventory", title: "انبار و رسید کالا", group: "کاتالوگ", description: "ثبت رسید ورود کالا، کاردکس موجودی، قیمت تمام‌شده و هشدار کمبود موجودی." },
+  { key: "product-import", title: "ورود گروهی محصول", group: "کاتالوگ", description: "افزودن یا به‌روزرسانی صدها محصول با یک فایل اکسل، به‌جای ثبت تک‌تک آن‌ها." },
+  { key: "compare", title: "مقایسه محصولات", group: "کاتالوگ", description: "مشتری چند محصول را کنار هم می‌گذارد و مشخصات و قیمتشان را در یک جدول مقایسه می‌کند." },
+  { key: "reviews", title: "دیدگاه و امتیاز محصول", group: "کاتالوگ", description: "مشتریان به محصول امتیاز و دیدگاه می‌دهند. شما دیدگاه‌ها را مدیریت و پاسخ می‌دهید و امتیاز در صفحهٔ محصول نمایش داده می‌شود." },
+  { key: "gold", title: "صنف طلا (نرخ لحظه‌ای)", group: "کاتالوگ", description: "قیمت محصولات بر اساس نرخ لحظه‌ای طلا، وزن، عیار، اجرت و سود محاسبه می‌شود. نرخ هر سفارش در همان سفارش ثبت می‌ماند." },
+  { key: "blog", title: "وبلاگ و دیدگاه مقالات", group: "محتوا و سئو", description: "بخش مقالات با دسته‌بندی و نویسنده، دیدگاه خوانندگان و نمایش آخرین مقالات در صفحهٔ اصلی. مناسب جذب بازدید از جست‌وجو." },
+  { key: "page-builder", title: "صفحه‌ساز", group: "محتوا و سئو", description: "چیدمان صفحهٔ اصلی و بخش‌های آن را بدون کدنویسی تغییر دهید: بنر، اسلایدر، فهرست محصول و بخش‌های محتوا." },
+  { key: "seo-tools", title: "ابزار سئو", group: "محتوا و سئو", description: "تنظیم عنوان و توضیح صفحات، ریدایرکت‌ها، noindex و آدرس canonical برای دیده شدن بهتر در گوگل." },
+  { key: "tickets", title: "تیکت پشتیبانی", group: "مشتریان", description: "مشتری از حساب خود تیکت ثبت می‌کند و شما با موضوع‌بندی پاسخ می‌دهید. تاریخچهٔ گفتگو و امتیاز رضایت نگه‌داری می‌شود." },
+  { key: "referral", title: "معرفی دوستان", group: "مشتریان", description: "هر مشتری کد معرفی دارد. پس از اولین خرید معرفی‌شده، به هر دو نفر اعتبار هدیه در کیف پول داده می‌شود." },
+  { key: "sms-campaigns", title: "پیامک و اعلان‌ها", group: "مشتریان", description: "پیامک خودکار برای مراحل سفارش، قالب‌های پیام و ارسال دستی پیامک گروهی به مشتریان." },
+  { key: "reports", title: "گزارش‌ها", group: "مدیریت", description: "گزارش مالی فروش، سود و مبالغ دوره‌ای و گزارش هر محصول، با امکان دریافت خروجی." },
+  { key: "audit-log", title: "تاریخچه فعالیت‌ها", group: "مدیریت", description: "ثبت کارهای حساس مدیران، مثل تغییر قیمت و وضعیت، تا همیشه معلوم باشد چه کسی چه کاری کرده است." },
 ] as const;
