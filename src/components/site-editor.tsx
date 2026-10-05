@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useActionState, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { FormState } from "@/app/actions";
 import { formatToman, normalizeDigits } from "@/lib/format";
-import { FeatureGrid, PackagePicker, PackageSummary, type AppliedPackage, type FeatureOption, type PackageOption } from "./feature-grid";
+import { FeatureGrid, PackagePicker, SelectionSummary, type AppliedPackage, type FeatureOption, type PackageOption } from "./feature-grid";
 import { JalaliDateField } from "./jalali-date-field";
 import { Select } from "./select";
 import { PriceInput } from "./price-input";
@@ -51,11 +51,6 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
   // How things were before the first package was applied, so one click can bring them back.
   const [beforePackage, setBeforePackage] = useState<{ selected: Set<string>; price: string } | null>(null);
   const [applied, setApplied] = useState<AppliedPackage | null>(null);
-  const [closingSummary, setClosingSummary] = useState(false);
-  const onSummaryClosed = useCallback(() => {
-    setApplied(null);
-    setClosingSummary(false);
-  }, []);
   const [tab, setTab] = useState("info");
   const errors = state.fieldErrors ?? {};
 
@@ -121,14 +116,15 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
               </Field>
             </div>
           </section>
-          {infoAside}
+          {/* A wrapper with a single child: a server-made element next to siblings makes React ask for a key. */}
+          {infoAside && <div className="contents">{infoAside}</div>}
           </div>
         </TabPanel>
 
         <TabPanel id="features" value={tab} idPrefix={idPrefix}>
-          <div className={applied ? "grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]" : ""}>
-            {/* First in the markup, so it docks on the right in this right-to-left layout and the form moves aside. */}
-            {applied && <PackageSummary applied={applied} features={features} closing={closingSummary} onClose={() => setClosingSummary(true)} onClosed={onSummaryClosed} />}
+          <div className="grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]">
+            {/* First in the markup, so it docks on the right in this right-to-left layout. */}
+            <SelectionSummary features={features} selected={selected} applied={applied} />
           <section className="card @container space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="m-0 font-bold">قابلیت‌های فعال</h2>
@@ -137,7 +133,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
                 {contract > 0 && <span className={contract >= total ? "text-green-700" : "text-amber-700"}> · قرارداد {formatToman(contract)}</span>}
               </p>
             </div>
-            <PackagePicker packages={packages} selected={selected} onAppliedChange={(next) => (next ? (setClosingSummary(false), setApplied(next)) : setClosingSummary(true))} onApply={(pkg) => {
+            <PackagePicker packages={packages} selected={selected} onAppliedChange={setApplied} onApply={(pkg) => {
               setBeforePackage((prev) => prev ?? { selected: new Set(selected), price });
               setSelected(new Set(pkg.featureKeys));
               if (!price) setPrice(String(pkg.price || ""));

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronDown, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Check, ChevronDown } from "lucide-react";
 import { formatToman } from "@/lib/format";
 
 export type FeatureOption = { key: string; title: string; description: string; group: string; price: number; isActive: boolean };
@@ -72,8 +72,7 @@ export type AppliedPackage = { pkg: PackageOption; added: string[]; removed: str
 /**
  * Ready-made packages, behind a checkbox: the list only shows once "start from a package" is on.
  * Choosing a card ticks exactly its features in one go and reports what it selected through
- * `onAppliedChange`, so the parent can show a `PackageSummary` beside the form (the grouped
- * checkboxes below may be folded, so the tick-list alone would not show it). The card that matches the current selection stays highlighted;
+ * `onAppliedChange`, so the parent can mark it in the `SelectionSummary` beside the form. The card that matches the current selection stays highlighted;
  * when nothing matches the selection reads as "custom".
  * `onUndo` (when given) puts the selection back to how it was before the first package was applied;
  * it runs from the button and also when the checkbox is switched off.
@@ -150,54 +149,41 @@ export function PackagePicker({ packages, selected, onApply, onAppliedChange, on
   );
 }
 
-const CLOSE_ANIMATION_MS = 200;
-
 /**
- * Docked card listing what the last applied package selected, and what it added or removed.
- * `onClose` asks to close; while `closing` the card plays its entrance backwards, then
- * `onClosed` runs so the parent can remove it.
+ * Docked card that always shows what is ticked right now, live. After a package was applied it
+ * also marks what that package added and lists what it took away.
  */
-export function PackageSummary({ applied, features, closing, onClose, onClosed }: { applied: AppliedPackage; features: FeatureOption[]; closing: boolean; onClose: () => void; onClosed: () => void }) {
-  const titleByKey = useMemo(() => new Map(features.map((feature) => [feature.key, feature.title])), [features]);
-  const title = (key: string) => titleByKey.get(key) ?? key;
-
-  useEffect(() => {
-    if (!closing) return;
-    // A timer rather than `animationend`, so it still finishes when the user prefers reduced motion.
-    const timer = setTimeout(onClosed, CLOSE_ANIMATION_MS);
-    return () => clearTimeout(timer);
-  }, [closing, onClosed]);
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+export function SelectionSummary({ features, selected, applied }: { features: FeatureOption[]; selected: ReadonlySet<string>; applied: AppliedPackage | null }) {
+  const chosen = features.filter((feature) => selected.has(feature.key));
+  const total = chosen.reduce((sum, feature) => sum + feature.price, 0);
+  const added = new Set(applied?.added);
+  const removed = features.filter((feature) => applied?.removed.includes(feature.key) && !selected.has(feature.key));
 
   return (
-    <aside aria-label={`قابلیت‌های بستهٔ ${applied.pkg.name}`} className={`${closing ? "slide-out-right" : "slide-in-right"} self-start rounded-2xl border border-slate-200 bg-white lg:sticky lg:top-6`}>
-      <header className="flex items-start justify-between gap-3 border-b border-slate-100 p-4">
-        <div className="min-w-0">
-          <h3 className="m-0 truncate text-sm font-bold">بستهٔ {applied.pkg.name}</h3>
-          <p className="m-0 mt-1 text-xs text-slate-500">{applied.pkg.featureKeys.length.toLocaleString("fa-IR")} قابلیت انتخاب شد · {formatToman(applied.pkg.price)}</p>
-        </div>
-        <button type="button" aria-label="بستن" onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X size={16} aria-hidden /></button>
+    <aside aria-label="قابلیت‌های انتخاب‌شده" className="self-start rounded-2xl border border-slate-200 bg-white lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+      <header className="border-b border-slate-100 p-4">
+        <h3 className="m-0 text-sm font-bold">{applied ? `بستهٔ ${applied.pkg.name}` : "انتخاب فعلی"}</h3>
+        <p className="m-0 mt-1 text-xs text-slate-500">{chosen.length.toLocaleString("fa-IR")} قابلیت · {formatToman(total)}</p>
       </header>
       <div className="space-y-4 p-4">
-        <ul className="m-0 list-none space-y-1.5 p-0 text-sm">
-          {applied.pkg.featureKeys.map((key) => (
-            <li key={key} className="flex items-center gap-2">
-              <Check size={14} aria-hidden className="shrink-0 text-green-600" />
-              <span className="flex-1">{title(key)}</span>
-              {applied.added.includes(key) && <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-brand">جدید</span>}
-            </li>
-          ))}
-        </ul>
-        {applied.removed.length > 0 && (
+        {chosen.length === 0 ? (
+          <p className="m-0 text-sm text-slate-500">هنوز قابلیتی انتخاب نشده است.</p>
+        ) : (
+          <ul className="m-0 list-none space-y-1.5 p-0 text-sm">
+            {chosen.map((feature) => (
+              <li key={feature.key} className="flex items-center gap-2">
+                <Check size={14} aria-hidden className="shrink-0 text-green-600" />
+                <span className="flex-1">{feature.title}</span>
+                {added.has(feature.key) && <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-brand">جدید</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+        {removed.length > 0 && (
           <div>
-            <p className="m-0 mb-1.5 text-xs font-bold text-slate-500">برداشته شد ({applied.removed.length.toLocaleString("fa-IR")})</p>
+            <p className="m-0 mb-1.5 text-xs font-bold text-slate-500">برداشته شد ({removed.length.toLocaleString("fa-IR")})</p>
             <ul className="m-0 list-none space-y-1 p-0 text-xs text-slate-400 line-through">
-              {applied.removed.map((key) => <li key={key}>{title(key)}</li>)}
+              {removed.map((feature) => <li key={feature.key}>{feature.title}</li>)}
             </ul>
           </div>
         )}
