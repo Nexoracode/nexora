@@ -9,7 +9,8 @@ export type PackageOption = { id: string; name: string; price: number; featureKe
 
 /**
  * Grouped checkbox list that submits as repeated `features` fields; reports the selection to its
- * parent. Each group folds away behind a header showing how many of its features are selected.
+ * parent. Each group folds away behind a header showing how many of its features are selected;
+ * only the first starts open.
  * Folded groups stay in the DOM (hidden), so their checkboxes are still submitted.
  */
 export function FeatureGrid({ features, selected, onChange }: { features: FeatureOption[]; selected: Set<string>; onChange: (next: Set<string>) => void }) {
@@ -18,11 +19,8 @@ export function FeatureGrid({ features, selected, onChange }: { features: Featur
     for (const feature of features) map.set(feature.group, [...(map.get(feature.group) ?? []), feature]);
     return [...map.entries()];
   }, [features]);
-  // Groups that already hold a selection start open; with nothing selected, the first one does.
-  const [open, setOpen] = useState<Set<string>>(() => {
-    const withSelection = groups.filter(([, items]) => items.some((item) => selected.has(item.key))).map(([group]) => group);
-    return new Set(withSelection.length ? withSelection : groups.slice(0, 1).map(([group]) => group));
-  });
+  // Only the first group starts open.
+  const [open, setOpen] = useState<Set<string>>(() => new Set(groups.slice(0, 1).map(([group]) => group)));
 
   const toggle = (key: string) => {
     const next = new Set(selected);
@@ -34,15 +32,6 @@ export function FeatureGrid({ features, selected, onChange }: { features: Featur
     if (!next.delete(group)) next.add(group);
     return next;
   });
-  const setGroup = (items: FeatureOption[], all: boolean) => {
-    const next = new Set(selected);
-    for (const item of items) {
-      if (all) next.add(item.key);
-      else next.delete(item.key);
-    }
-    onChange(next);
-  };
-
   return (
     <div className="space-y-3">
       {groups.map(([group, items], index) => {
@@ -57,7 +46,6 @@ export function FeatureGrid({ features, selected, onChange }: { features: Featur
                 {group}
                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${count ? "bg-indigo-100 text-brand" : "bg-slate-200 text-slate-500"}`}>{count.toLocaleString("fa-IR")} از {items.length.toLocaleString("fa-IR")}</span>
               </button>
-              <button type="button" onClick={() => setGroup(items, count < items.length)} className="text-xs text-brand">{count < items.length ? "انتخاب همه" : "برداشتن همه"}</button>
             </div>
             <div id={panelId} hidden={!isOpen} className="grid gap-2 p-3 sm:grid-cols-2">
               {items.map((feature) => (
