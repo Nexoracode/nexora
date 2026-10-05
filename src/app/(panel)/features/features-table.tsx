@@ -5,6 +5,7 @@ import { Fragment, useState } from "react";
 import { Pencil, Power, PowerOff, X } from "lucide-react";
 import { toggleFeatureActiveAction } from "@/app/actions";
 import type { FeatureOption } from "@/components/feature-grid";
+import { ConfirmForm } from "@/components/confirm-form";
 import { IconSubmitButton } from "@/components/ui";
 import { formatToman } from "@/lib/format";
 
@@ -53,14 +54,21 @@ export function FeaturesTable({ features }: { features: FeatureOption[] }) {
                   <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
                     <div className="flex items-center gap-1.5">
                       <Link href={`/features/${feature.key}/edit`} aria-label={`ویرایش ${feature.title}`} title="ویرایش" className="btn btn-ghost !px-2.5 !py-2"><Pencil size={16} aria-hidden /></Link>
-                      <form
-                        action={toggleFeatureActiveAction.bind(null, feature.key)}
-                        onSubmit={(event) => { if (feature.isActive && !confirm("این قابلیت غیرفعال شود؟ تا فعال‌سازی دوباره قابل خرید نیست؛ سایت‌هایی که آن را دارند همچنان استفاده می‌کنند.")) event.preventDefault(); }}
-                      >
-                        <IconSubmitButton label={feature.isActive ? `غیرفعال‌کردن ${feature.title}` : `فعال‌کردن ${feature.title}`} variant={feature.isActive ? "danger" : "ghost"}>
-                          {feature.isActive ? <PowerOff size={16} aria-hidden /> : <Power size={16} aria-hidden />}
-                        </IconSubmitButton>
-                      </form>
+                      {feature.isActive ? (
+                        <ConfirmForm
+                          action={toggleFeatureActiveAction.bind(null, feature.key)}
+                          title={`غیرفعال‌کردن «${feature.title}»`}
+                          message="تا فعال‌سازی دوباره، این قابلیت قابل خرید نیست. سایت‌هایی که آن را دارند همچنان استفاده می‌کنند."
+                          confirmLabel="غیرفعال شود"
+                          trigger={(open) => (
+                            <button type="button" onClick={open} aria-label={`غیرفعال‌کردن ${feature.title}`} title="غیرفعال‌کردن" className="btn btn-danger !px-2.5 !py-2"><PowerOff size={16} aria-hidden /></button>
+                          )}
+                        />
+                      ) : (
+                        <form action={toggleFeatureActiveAction.bind(null, feature.key)}>
+                          <IconSubmitButton label={`فعال‌کردن ${feature.title}`}><Power size={16} aria-hidden /></IconSubmitButton>
+                        </form>
+                      )}
                     </div>
                   </td>
                 </tr>

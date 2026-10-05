@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { deleteSiteAction, rotateKeyAction } from "@/app/actions";
 import { KeyBox } from "@/components/key-box";
-import { SubmitButton } from "@/components/ui";
+import { ConfirmForm } from "@/components/confirm-form";
 
 /** License key (prefix only, the rest is never stored) with its rotate and delete actions, shown at the top of the info tab. */
 export function SiteDangerZone({ siteId, keyPrefix }: { siteId: string; keyPrefix: string }) {
@@ -16,12 +16,21 @@ export function SiteDangerZone({ siteId, keyPrefix }: { siteId: string; keyPrefi
           <code dir="ltr" className="text-sm">{keyPrefix}…</code>
         </div>
         <div className="flex flex-wrap gap-2">
-          <form action={rotate} onSubmit={(e) => { if (!confirm("کلید فعلی از کار می‌افتد و سایت باید کلید جدید را بگیرد. ادامه می‌دهید؟")) e.preventDefault(); }}>
-            <SubmitButton variant="ghost">بازتولید کلید</SubmitButton>
-          </form>
-          <form action={deleteSiteAction.bind(null, siteId)} onSubmit={(e) => { if (!confirm("سایت و تاریخچه‌اش حذف می‌شود. ادامه می‌دهید؟")) e.preventDefault(); }}>
-            <SubmitButton variant="danger">حذف سایت</SubmitButton>
-          </form>
+          <ConfirmForm
+            action={rotate}
+            tone="warning"
+            title="بازتولید کلید لایسنس"
+            message="کلید فعلی از کار می‌افتد و سایت مشتری تا گذاشتن کلید جدید، قابلیت‌های اختیاری را از دست می‌دهد. ادامه می‌دهید؟"
+            confirmLabel="بازتولید کلید"
+            trigger={(open) => <button type="button" className="btn btn-ghost" onClick={open}>بازتولید کلید</button>}
+          />
+          <ConfirmForm
+            action={deleteSiteAction.bind(null, siteId)}
+            title="حذف سایت"
+            message="سایت، کلید لایسنس و تاریخچه‌اش برای همیشه حذف می‌شود و این کار برگشت‌پذیر نیست."
+            confirmLabel="حذف سایت"
+            trigger={(open) => <button type="button" className="btn btn-danger" onClick={open}>حذف سایت</button>}
+          />
         </div>
       </div>
       {rotated.key && <KeyBox licenseKey={rotated.key} />}

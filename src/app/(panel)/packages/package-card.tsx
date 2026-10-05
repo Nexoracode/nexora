@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { deletePackageAction, savePackageAction } from "@/app/actions";
 import { FeatureGrid, type FeatureOption, type PackageOption } from "@/components/feature-grid";
+import { ConfirmForm } from "@/components/confirm-form";
 import { PriceInput } from "@/components/price-input";
 import { Field, SubmitButton } from "@/components/ui";
 
@@ -33,9 +34,13 @@ export function PackageCard({ pkg, features }: { pkg: PackageOption | null; feat
         <SubmitButton>{pkg ? "ذخیره بسته" : "افزودن بسته"}</SubmitButton>
       </form>
       {pkg && (
-        <form action={deletePackageAction.bind(null, pkg.id)} onSubmit={(e) => { if (!confirm("این بسته حذف شود؟ سایت‌هایی که قبلاً با آن ساخته شده‌اند تغییری نمی‌کنند.")) e.preventDefault(); }}>
-          <SubmitButton variant="danger">حذف بسته</SubmitButton>
-        </form>
+        <ConfirmForm
+          action={deletePackageAction.bind(null, pkg.id)}
+          title={`حذف بستهٔ «${pkg.name}»`}
+          message="بسته حذف می‌شود. سایت‌هایی که قبلاً با آن ساخته شده‌اند تغییری نمی‌کنند."
+          confirmLabel="حذف بسته"
+          trigger={(open) => <button type="button" className="btn btn-danger" onClick={open}>حذف بسته</button>}
+        />
       )}
     </section>
   );
