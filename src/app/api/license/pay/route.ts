@@ -38,8 +38,9 @@ export async function POST(request: Request) {
   let amountToman: number;
   let title: string;
   if (featureKey) {
-    const feature = await db.feature.findUnique({ where: { key: featureKey }, select: { title: true, price: true } });
+    const feature = await db.feature.findUnique({ where: { key: featureKey }, select: { title: true, price: true, isActive: true } });
     if (!feature) return fail(404, "قابلیت پیدا نشد.");
+    if (!feature.isActive) return fail(409, "این قابلیت فعلاً غیرفعال است.");
     if (owned.has(featureKey)) return fail(409, "این قابلیت از قبل برای سایت فعال است.");
     amountToman = Number(feature.price);
     title = feature.title;

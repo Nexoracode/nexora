@@ -3,7 +3,7 @@ import type { FeatureOption, PackageOption } from "@/components/feature-grid";
 
 export async function getFeatureOptions(): Promise<FeatureOption[]> {
   const features = await db.feature.findMany({ orderBy: { sortOrder: "asc" } });
-  return features.map((f) => ({ key: f.key, title: f.title, description: f.description ?? "", group: f.group, price: Number(f.price) }));
+  return features.map((f) => ({ key: f.key, title: f.title, description: f.description ?? "", group: f.group, price: Number(f.price), isActive: f.isActive }));
 }
 
 export async function getPackageOptions(): Promise<PackageOption[]> {

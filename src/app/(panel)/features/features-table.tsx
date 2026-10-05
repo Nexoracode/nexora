@@ -1,38 +1,34 @@
 "use client";
 
-import { Fragment, useActionState, useState } from "react";
-import { X } from "lucide-react";
-import { saveFeatureAction } from "@/app/actions";
+import Link from "next/link";
+import { Fragment, useState } from "react";
+import { Pencil, Power, PowerOff, X } from "lucide-react";
+import { toggleFeatureActiveAction } from "@/app/actions";
 import type { FeatureOption } from "@/components/feature-grid";
-import { PriceInput } from "@/components/price-input";
-import { Field, SubmitButton } from "@/components/ui";
+import { IconSubmitButton } from "@/components/ui";
 import { formatToman } from "@/lib/format";
 
-// Limits mirror featureRowSchema in src/app/actions.ts and the Feature columns in prisma/schema.prisma.
-const LIMITS = { title: 120, description: 500 } as const;
-
-/** Table of features; a row opens its details right below it, and from there the edit form. */
+/** One page of features; a row opens its details below it, the icons edit it or switch it on/off. */
 export function FeaturesTable({ features }: { features: FeatureOption[] }) {
   const [selected, setSelected] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
-
-  const toggle = (key: string) => {
-    setSelected((prev) => (prev === key ? null : key));
-    setEditing(false);
-  };
+  const toggle = (key: string) => setSelected((prev) => (prev === key ? null : key));
 
   return (
     <div className="card overflow-x-auto !p-0">
-      <table className="w-full min-w-[40rem] text-sm">
+      <table className="w-full min-w-[44rem] text-sm">
         <thead className="bg-slate-50 text-slate-500">
           <tr>
             <th className="px-4 py-3 text-start font-medium">قابلیت</th>
             <th className="px-4 py-3 text-start font-medium">گروه</th>
-            <th className="px-4 py-3 text-start font-medium">کلید</th>
             <th className="px-4 py-3 text-start font-medium">قیمت</th>
+            <th className="px-4 py-3 text-start font-medium">وضعیت</th>
+            <th className="px-4 py-3 text-start font-medium">عملیات</th>
           </tr>
         </thead>
         <tbody>
+          {features.length === 0 && (
+            <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-500">قابلیتی پیدا نشد.</td></tr>
+          )}
           {features.map((feature) => {
             const isOpen = selected === feature.key;
             return (
@@ -41,25 +37,50 @@ export function FeaturesTable({ features }: { features: FeatureOption[] }) {
                   tabIndex={0}
                   aria-expanded={isOpen}
                   onClick={() => toggle(feature.key)}
-                  onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(feature.key); } }}
+                  onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); toggle(feature.key); } }}
                   className={`cursor-pointer border-t border-slate-100 hover:bg-slate-50 ${isOpen ? "bg-indigo-50" : ""}`}
                 >
-                  <td className="px-4 py-3 font-bold">{feature.title}</td>
+                  <td className="px-4 py-3">
+                    <p className="m-0 font-bold">{feature.title}</p>
+                    <code dir="ltr" className="text-xs text-slate-500">{feature.key}</code>
+                  </td>
                   <td className="px-4 py-3 text-slate-500">{feature.group}</td>
-                  <td className="px-4 py-3"><code dir="ltr" className="text-xs">{feature.key}</code></td>
                   <td className="px-4 py-3">{feature.price > 0 ? formatToman(feature.price) : <span className="text-slate-400">تعیین نشده</span>}</td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${feature.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>{feature.isActive ? "فعال" : "غیرفعال"}</span>
+                  </td>
+                  {/* Clicks on the icons must not open or close the row. */}
+                  <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                    <div className="flex items-center gap-1.5">
+                      <Link href={`/features/${feature.key}/edit`} aria-label={`ویرایش ${feature.title}`} title="ویرایش" className="btn btn-ghost !px-2.5 !py-2"><Pencil size={16} aria-hidden /></Link>
+                      <form
+                        action={toggleFeatureActiveAction.bind(null, feature.key)}
+                        onSubmit={(event) => { if (feature.isActive && !confirm("این قابلیت غیرفعال شود؟ تا فعال‌سازی دوباره قابل خرید نیست؛ سایت‌هایی که آن را دارند همچنان استفاده می‌کنند.")) event.preventDefault(); }}
+                      >
+                        <IconSubmitButton label={feature.isActive ? `غیرفعال‌کردن ${feature.title}` : `فعال‌کردن ${feature.title}`} variant={feature.isActive ? "danger" : "ghost"}>
+                          {feature.isActive ? <PowerOff size={16} aria-hidden /> : <Power size={16} aria-hidden />}
+                        </IconSubmitButton>
+                      </form>
+                    </div>
+                  </td>
                 </tr>
                 {isOpen && (
                   <tr className="border-t border-indigo-100 bg-indigo-50/40">
-                    <td colSpan={4} className="px-4 py-4">
-                      <div className="mb-3 flex items-center justify-between gap-3">
+                    <td colSpan={5} className="px-4 py-4">
+                      <div className="mb-2 flex items-center justify-between gap-3">
                         <h2 className="m-0 text-sm font-bold">{feature.title}</h2>
-                        <div className="flex gap-2">
-                          <button type="button" className="btn btn-ghost" onClick={() => setEditing((value) => !value)}>{editing ? "نمایش جزئیات" : "ویرایش"}</button>
-                          <button type="button" className="btn btn-ghost !px-2.5" aria-label="بستن جزئیات" onClick={() => toggle(feature.key)}><X size={16} aria-hidden /></button>
-                        </div>
+                        <button type="button" className="btn btn-ghost !px-2.5" aria-label="بستن جزئیات" onClick={() => toggle(feature.key)}><X size={16} aria-hidden /></button>
                       </div>
-                      {editing ? <FeatureEditor key={feature.key} feature={feature} /> : <FeatureDetails feature={feature} />}
+                      <dl className="m-0 grid gap-4 text-sm sm:grid-cols-[1fr_auto]">
+                        <div>
+                          <dt className="text-xs text-slate-500">توضیح برای مشتری</dt>
+                          <dd className="m-0 mt-1 leading-7">{feature.description || <span className="text-slate-400">توضیحی ثبت نشده است.</span>}</dd>
+                        </div>
+                        <div className="sm:text-end">
+                          <dt className="text-xs text-slate-500">قیمت</dt>
+                          <dd className="m-0 mt-1 font-bold">{feature.price > 0 ? formatToman(feature.price) : "تعیین نشده"}</dd>
+                        </div>
+                      </dl>
                     </td>
                   </tr>
                 )}
@@ -69,45 +90,5 @@ export function FeaturesTable({ features }: { features: FeatureOption[] }) {
         </tbody>
       </table>
     </div>
-  );
-}
-
-function FeatureDetails({ feature }: { feature: FeatureOption }) {
-  return (
-    <dl className="m-0 grid gap-4 text-sm sm:grid-cols-[1fr_auto]">
-      <div>
-        <dt className="text-xs text-slate-500">توضیح برای مشتری</dt>
-        <dd className="m-0 mt-1 leading-7">{feature.description || <span className="text-slate-400">توضیحی ثبت نشده است.</span>}</dd>
-      </div>
-      <div className="sm:text-end">
-        <dt className="text-xs text-slate-500">قیمت</dt>
-        <dd className="m-0 mt-1 font-bold">{feature.price > 0 ? formatToman(feature.price) : "تعیین نشده"}</dd>
-      </div>
-    </dl>
-  );
-}
-
-function FeatureEditor({ feature }: { feature: FeatureOption }) {
-  const [state, action] = useActionState(saveFeatureAction.bind(null, feature.key), {});
-  const errors = state.fieldErrors ?? {};
-  const a11y = (name: string) => ({ "aria-invalid": errors[name] ? true : undefined, "aria-describedby": `${feature.key}-${name}-msg` }) as const;
-  const id = (name: string) => `${feature.key}-${name}`;
-  return (
-    <form action={action} className="space-y-1">
-      {state.saved && <p role="status" className="mb-2 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700">ذخیره شد.</p>}
-      {state.error && !state.fieldErrors && <p role="alert" className="mb-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">{state.error}</p>}
-      <div className="grid gap-x-4 sm:grid-cols-[1fr_14rem]">
-        <Field label="عنوان" htmlFor={id("title")} error={errors.title}>
-          <input id={id("title")} name="title" defaultValue={feature.title} maxLength={LIMITS.title} className="input" {...a11y("title")} />
-        </Field>
-        <Field label="قیمت" htmlFor={id("price")} error={errors.price}>
-          <PriceInput id={id("price")} name="price" defaultValue={feature.price} {...a11y("price")} />
-        </Field>
-      </div>
-      <Field label="توضیح برای مشتری" htmlFor={id("description")} error={errors.description} hint={`حداکثر ${LIMITS.description} نویسه`}>
-        <textarea id={id("description")} name="description" rows={3} defaultValue={feature.description} maxLength={LIMITS.description} className="input" {...a11y("description")} />
-      </Field>
-      <SubmitButton>ذخیره</SubmitButton>
-    </form>
   );
 }

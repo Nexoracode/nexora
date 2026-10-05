@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     env.LICENSE_PRIVATE_KEY,
   );
   const [catalog, owner, pending, packages] = await Promise.all([
-    db.feature.findMany({ orderBy: { sortOrder: "asc" }, select: { key: true, title: true, description: true, group: true, price: true } }),
+    db.feature.findMany({ orderBy: { sortOrder: "asc" }, select: { key: true, title: true, description: true, group: true, price: true, isActive: true } }),
     db.ownerSettings.findUnique({ where: { id: "main" }, select: { holderName: true, cardNumber: true, sheba: true, bankName: true, contactPhone: true, note: true, onlineMerchantId: true } }),
     db.purchaseRequest.findMany({ where: { siteId: site.id, status: "PENDING" }, select: { featureKey: true, packageId: true } }),
     db.package.findMany({ orderBy: { price: "asc" }, select: { id: true, name: true, price: true, features: { select: { featureKey: true } } } }),
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   // Display-only extras for the customer's purchase screen; the signed token alone grants features.
   return NextResponse.json({
     token,
-    catalog: catalog.map((f) => ({ key: f.key, title: f.title, description: f.description ?? "", group: f.group, price: Number(f.price) })),
+    catalog: catalog.map((f) => ({ key: f.key, title: f.title, description: f.description ?? "", group: f.group, price: Number(f.price), isActive: f.isActive })),
     // The merchant id never leaves the panel; sites only learn whether paying online is possible.
     owner: owner ? { holderName: owner.holderName, cardNumber: owner.cardNumber, sheba: owner.sheba, bankName: owner.bankName, contactPhone: owner.contactPhone, note: owner.note } : null,
     onlineEnabled: Boolean(owner?.onlineMerchantId),

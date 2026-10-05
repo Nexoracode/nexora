@@ -167,22 +167,40 @@ export async function deleteSiteAction(siteId: string) {
 
 const featureRowSchema = z.object({
   title: z.string().trim().min(1, "عنوان را وارد کنید.").max(120, "عنوان حداکثر ۱۲۰ نویسه است."),
+  group: z.string().trim().min(1, "گروه را وارد کنید.").max(80, "گروه حداکثر ۸۰ نویسه است."),
   description: z.string().trim().max(500, "توضیح حداکثر ۵۰۰ نویسه است."),
   price: priceField,
+  isActive: z.boolean(),
 });
 
 export async function saveFeatureAction(key: string, _: FormState, formData: FormData): Promise<FormState> {
   await requireOwnerAction();
-  const parsed = featureRowSchema.safeParse({ title: formData.get("title"), description: formData.get("description") ?? "", price: formData.get("price") });
+  const parsed = featureRowSchema.safeParse({
+    title: formData.get("title"),
+    group: formData.get("group"),
+    description: formData.get("description") ?? "",
+    price: formData.get("price"),
+    isActive: formData.get("isActive") === "on",
+  });
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
     for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
     return formError(fieldErrors);
   }
   if (!(await db.feature.findUnique({ where: { key }, select: { key: true } }))) return { error: "قابلیت پیدا نشد." };
-  await db.feature.update({ where: { key }, data: { title: parsed.data.title, description: parsed.data.description || null, price: parsed.data.price }, select: { key: true } });
+  const { description, ...rest } = parsed.data;
+  await db.feature.update({ where: { key }, data: { ...rest, description: description || null }, select: { key: true } });
   revalidatePath("/features");
   return { saved: true };
+}
+
+/** Switches a feature between "can be bought" and "temporarily unavailable"; sites that already own it keep it. */
+export async function toggleFeatureActiveAction(key: string) {
+  await requireOwnerAction();
+  const feature = await db.feature.findUnique({ where: { key }, select: { isActive: true } });
+  if (!feature) return;
+  await db.feature.update({ where: { key }, data: { isActive: !feature.isActive }, select: { key: true } });
+  revalidatePath("/features");
 }
 
 const packageSchema = z.object({ name: z.string().trim().min(1, "نام بسته را وارد کنید.").max(120, "نام بسته حداکثر ۱۲۰ نویسه است."), price: priceField });

@@ -43,6 +43,8 @@ model Feature {
   group       String   @db.VarChar(80)
   price       Decimal  @default(0) @db.Decimal(14, 0)
   sortOrder Int      @default(0)
+  // A disabled feature stays with the sites that already own it but cannot be bought for now.
+  isActive    Boolean  @default(true)
   createdAt DateTime @default(now())
 
   siteFeatures     SiteFeature[]
