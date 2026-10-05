@@ -74,7 +74,6 @@ export function FeaturesTable({ features }: { features: FeatureOption[] }) {
                 {isOpen && (
                   <tr className="border-t border-indigo-100 bg-indigo-50/40">
                     <td colSpan={5} className="px-4 py-4">
-                      <h2 className="m-0 mb-3 text-sm font-bold">{feature.title}</h2>
                       <dl className="m-0 text-sm">
                         <div>
                           <dt className="text-xs text-slate-500">توضیح برای مشتری</dt>
