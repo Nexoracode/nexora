@@ -15,6 +15,27 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Anything that can be clicked shows the hand cursor (Tailwind's reset leaves buttons on the arrow). */
+a[href],
+button:not(:disabled),
+[role="button"],
+[role="tab"],
+[role="option"],
+summary,
+select,
+input[type="checkbox"],
+input[type="radio"],
+label:has(input[type="checkbox"]),
+label:has(input[type="radio"]),
+tr[aria-expanded] {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled {
+  cursor: not-allowed;
+}
+
 .input {
   width: 100%;
   border-radius: 0.6rem;
