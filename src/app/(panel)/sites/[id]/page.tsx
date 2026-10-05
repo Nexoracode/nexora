@@ -39,20 +39,28 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
           notes: site.notes ?? "",
           featureKeys: site.features.map((f) => f.featureKey),
         }}
+        extraTabs={[
+          {
+            id: "history",
+            label: "تاریخچه",
+            badge: site.events.length,
+            content: (
+              <section className="card">
+                {site.events.length === 0 ? (
+                  <p className="m-0 text-sm text-slate-500">رویدادی ثبت نشده است.</p>
+                ) : (
+                  <ul className="m-0 list-none divide-y divide-slate-100 p-0 text-sm">
+                    {site.events.map((event) => (
+                      <li key={event.id} className="flex justify-between gap-4 py-2.5"><span>{event.message}</span><span className="shrink-0 text-xs text-slate-500">{formatDateTime(event.createdAt)}</span></li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ),
+          },
+          { id: "key", label: "کلید و حذف", content: <SiteDangerZone siteId={site.id} /> },
+        ]}
       />
-      <SiteDangerZone siteId={site.id} />
-      <section className="card">
-        <h2 className="mb-3 font-bold">تاریخچه</h2>
-        {site.events.length === 0 ? (
-          <p className="text-sm text-slate-500">رویدادی ثبت نشده است.</p>
-        ) : (
-          <ul className="divide-y divide-slate-100 text-sm">
-            {site.events.map((event) => (
-              <li key={event.id} className="flex justify-between gap-4 py-2"><span>{event.message}</span><span className="shrink-0 text-xs text-slate-500">{formatDateTime(event.createdAt)}</span></li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }
