@@ -14,6 +14,8 @@ function createClient(): PrismaClient {
     password: decodeURIComponent(url.password),
     database: url.pathname.slice(1),
     connectionLimit: 10,
+    // The connector gives up after 1s by default, which a database in another region (a hosted one, reached over TLS) can exceed.
+    connectTimeout: 10_000,
     // Hosted MySQL such as TiDB Cloud only accepts TLS connections. The same `?sslaccept=` flag Prisma's own CLI reads switches it on here too.
     ssl: sslAccept ? { rejectUnauthorized: sslAccept === "strict" } : undefined,
   });
