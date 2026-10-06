@@ -6,6 +6,7 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function createClient(): PrismaClient {
   const url = new URL(env.DATABASE_URL);
+  const sslAccept = url.searchParams.get("sslaccept");
   const adapter = new PrismaMariaDb({
     host: url.hostname,
     port: Number(url.port || 3306),
@@ -13,6 +14,8 @@ function createClient(): PrismaClient {
     password: decodeURIComponent(url.password),
     database: url.pathname.slice(1),
     connectionLimit: 10,
+    // Hosted MySQL such as TiDB Cloud only accepts TLS connections. The same `?sslaccept=` flag Prisma's own CLI reads switches it on here too.
+    ssl: sslAccept ? { rejectUnauthorized: sslAccept === "strict" } : undefined,
   });
   return new PrismaClient({ adapter }) as PrismaClient;
 }
