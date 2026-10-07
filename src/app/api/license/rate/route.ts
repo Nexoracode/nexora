@@ -15,7 +15,7 @@ const bodySchema = z
 
 const fail = (status: number, message: string) => NextResponse.json({ message }, { status });
 
-/** A site rates a feature or package it bought. Giving the same target again replaces the earlier rating. */
+/** A site rates a feature or package it bought, once; the rating is final. */
 export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return fail(400, "اطلاعات درخواست نامعتبر است.");
@@ -25,23 +25,16 @@ export async function POST(request: Request) {
   if (!auth.ok) return fail(auth.status, "لایسنس نامعتبر است.");
   const { site } = auth;
 
+  const already = "قبلاً برای این مورد امتیاز داده‌اید.";
   if (featureKey) {
     if (!site.features.some((f) => f.featureKey === featureKey)) return fail(403, "فقط پس از خرید می‌توانید امتیاز بدهید.");
-    await db.rating.upsert({
-      where: { siteId_featureKey: { siteId: site.id, featureKey } },
-      create: { siteId: site.id, featureKey, stars },
-      update: { stars },
-      select: { id: true },
-    });
+    if (await db.rating.findFirst({ where: { siteId: site.id, featureKey }, select: { id: true } })) return fail(409, already);
+    await db.rating.create({ data: { siteId: site.id, featureKey, stars }, select: { id: true } });
   } else if (packageId) {
     const bought = await db.purchaseRequest.findFirst({ where: { siteId: site.id, packageId, status: "APPROVED" }, select: { id: true } });
     if (!bought) return fail(403, "فقط پس از خرید می‌توانید امتیاز بدهید.");
-    await db.rating.upsert({
-      where: { siteId_packageId: { siteId: site.id, packageId } },
-      create: { siteId: site.id, packageId, stars },
-      update: { stars },
-      select: { id: true },
-    });
+    if (await db.rating.findFirst({ where: { siteId: site.id, packageId }, select: { id: true } })) return fail(409, already);
+    await db.rating.create({ data: { siteId: site.id, packageId, stars }, select: { id: true } });
   }
   return NextResponse.json({ ok: true });
 }
