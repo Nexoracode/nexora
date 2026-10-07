@@ -57,7 +57,8 @@ export default async function SitesPage({ searchParams }: { searchParams: Search
         <table className="w-full min-w-[46rem] text-sm">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
-              <th className="px-4 py-3 text-start font-medium">سایت</th>
+              <th className="px-4 py-3 text-start font-medium">نام سایت</th>
+              <th className="px-4 py-3 text-start font-medium">دامنه</th>
               <th className="px-4 py-3 text-start font-medium">وضعیت</th>
               <th className="px-4 py-3 text-start font-medium">قابلیت‌ها</th>
               <th className="px-4 py-3 text-start font-medium">قرارداد</th>
@@ -67,16 +68,14 @@ export default async function SitesPage({ searchParams }: { searchParams: Search
           </thead>
           <tbody>
             {sites.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">چیزی پیدا نشد.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-500">چیزی پیدا نشد.</td></tr>
             )}
             {sites.map((site) => (
               <tr key={site.id} className="relative border-t border-slate-100 hover:bg-slate-50">
+                <td className="px-4 py-3 font-bold">{site.client.name}</td>
                 <td className="px-4 py-3">
-                  {/* Domain and client on one line, so the row reads as one. The link's overlay makes the whole row clickable without JavaScript. */}
-                  <div className="flex items-baseline gap-2">
-                    <Link href={`/sites/${site.id}`} dir="ltr" className="font-bold after:absolute after:inset-0">{site.domain}</Link>
-                    <span className="text-xs text-slate-500">{site.client.name}</span>
-                  </div>
+                  {/* The link's overlay makes the whole row clickable without JavaScript. */}
+                  <Link href={`/sites/${site.id}`} dir="ltr" className="inline-block text-slate-600 after:absolute after:inset-0">{site.domain}</Link>
                 </td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-3 py-1 text-xs font-medium ${site.status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{site.status === "ACTIVE" ? "فعال" : "تعلیق"}</span>
