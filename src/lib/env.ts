@@ -10,6 +10,8 @@ const schema = z.object({
   // Zarinpal merchant id for the "pay online" option. Unset means online payment is off. The gateway runs in
   // sandbox mode everywhere except production, so development never charges real money.
   ZARINPAL_MERCHANT_ID: z.preprocess((value) => (value === "" ? undefined : value), z.string().uuid().optional()),
+  // "true" forces the gateway's sandbox, "false" the live one; unset follows NODE_ENV. A test merchant id only works in the sandbox.
+  ZARINPAL_SANDBOX: z.preprocess((value) => (value === "" ? undefined : value), z.enum(["true", "false"]).optional()),
   // Public address of this panel; the payment gateway sends buyers back to it.
   APP_URL: z.url().default("http://localhost:3001"),
 });
