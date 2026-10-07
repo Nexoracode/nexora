@@ -29,7 +29,7 @@ async function post(config: Config, path: "request" | "verify", body: Record<str
 /** `amountRials` is what Zarinpal charges; the panel stores prices in toman. */
 export async function requestPayment(config: Config, input: { amountRials: number; callbackUrl: string; description: string }) {
   const result = await post(config, "request", { amount: input.amountRials, callback_url: input.callbackUrl, description: input.description });
-  if (result.data?.code !== 100 || !result.data.authority) throw new Error("Zarinpal rejected the payment request");
+  if (result.data?.code !== 100 || !result.data.authority) throw new Error(`Zarinpal rejected the payment request (code ${result.data?.code ?? "none"})`);
   return { authority: result.data.authority, redirectUrl: `${bases(config.sandbox).pay}/${encodeURIComponent(result.data.authority)}` };
 }
 

@@ -69,7 +69,9 @@ export async function POST(request: Request) {
     );
     await db.purchaseRequest.update({ where: { id: purchase.id }, data: { authority: gateway.authority }, select: { id: true } });
     return NextResponse.json({ redirectUrl: gateway.redirectUrl });
-  } catch {
+  } catch (error) {
+    // The reason stays in the panel's log; the buyer only needs to know it did not start.
+    console.error("Online payment could not be started:", error instanceof Error ? `${error.message}${error.cause ? ` — ${String(error.cause)}` : ""}` : error);
     await db.purchaseRequest.update({ where: { id: purchase.id }, data: { status: "FAILED", resolvedAt: new Date() }, select: { id: true } });
     return fail(502, "اتصال به درگاه پرداخت برقرار نشد؛ دوباره تلاش کنید.");
   }
