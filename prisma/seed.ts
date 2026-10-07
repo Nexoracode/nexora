@@ -7,7 +7,7 @@ import { defaultFeatures } from "../src/lib/catalog";
  * can be edited in the panel afterwards.
  */
 const defaultPackages = [
-  { name: "آغاز", price: 3_000_000, featureKeys: ["card-to-card", "compare", "promotions"] },
+  { name: "آغاز", price: 2_200_000, featureKeys: ["card-to-card", "compare", "promotions"] },
   { name: "نشر", price: 5_000_000, featureKeys: ["blog", "page-builder", "seo-tools"] },
   {
     name: "فروشگاهی",
