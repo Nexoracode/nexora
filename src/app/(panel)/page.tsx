@@ -72,9 +72,11 @@ export default async function SitesPage({ searchParams }: { searchParams: Search
             {sites.map((site) => (
               <tr key={site.id} className="relative border-t border-slate-100 hover:bg-slate-50">
                 <td className="px-4 py-3">
-                  {/* The link's overlay makes the whole row clickable without JavaScript. */}
-                  <Link href={`/sites/${site.id}`} dir="ltr" className="block text-start font-bold after:absolute after:inset-0">{site.domain}</Link>
-                  <span className="text-xs text-slate-500">{site.client.name}</span>
+                  {/* Domain and client on one line, so the row reads as one. The link's overlay makes the whole row clickable without JavaScript. */}
+                  <div className="flex items-baseline gap-2">
+                    <Link href={`/sites/${site.id}`} dir="ltr" className="font-bold after:absolute after:inset-0">{site.domain}</Link>
+                    <span className="text-xs text-slate-500">{site.client.name}</span>
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-3 py-1 text-xs font-medium ${site.status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{site.status === "ACTIVE" ? "فعال" : "تعلیق"}</span>
