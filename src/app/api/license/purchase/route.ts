@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     if (period) {
       if (pkg.monthlyPrice === null) return fail(409, "این بسته به‌عنوان پلن اشتراک عرضه نمی‌شود.");
       const settings = (await db.subscriptionSettings.findUnique({ where: { id: "main" } })) ?? DEFAULT_SUBSCRIPTION_SETTINGS;
-      if (renewalTooEarly({ endsAt: site.expiresAt ? contractEndsAt(site.expiresAt) : null, planId: site.planId, packageId: packageId ?? "", reminderDays: settings.reminderDays })) return fail(409, "هنوز زمان تمدید این پلن نرسیده است.");
+      if (renewalTooEarly({ endsAt: site.expiresAt ? contractEndsAt(site.expiresAt) : null, planId: site.planId, currentPeriod: site.period, packageId: packageId ?? "", period, reminderDays: settings.reminderDays })) return fail(409, "هنوز زمان تمدید این پلن نرسیده است.");
       title = `اشتراک ${pkg.name}`;
     } else {
       // A package that is a subscription plan is only sold as a subscription, never as a one-off purchase.

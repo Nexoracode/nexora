@@ -83,9 +83,10 @@ export function renewalWindowDays(reminderDays: string): number {
   return Math.max(0, ...reminderDays.split(",").map(Number).filter(Number.isInteger)) || 7;
 }
 
-/** True while the site's own plan still has so long to run that renewing it now is too early. */
-export function renewalTooEarly(input: { endsAt: Date | null; planId: string | null; packageId: string; reminderDays: string; now?: Date }): boolean {
-  if (!input.endsAt || input.planId !== input.packageId) return false;
+/** True while the site's own plan, for the same period, still has so long to run that renewing it now is too early. */
+export function renewalTooEarly(input: { endsAt: Date | null; planId: string | null; currentPeriod: SubscriptionPeriod | null; packageId: string; period: SubscriptionPeriod; reminderDays: string; now?: Date }): boolean {
+  // Only a pure renewal (same plan, same period) waits; another period of the same plan is a change and stays open.
+  if (!input.endsAt || input.planId !== input.packageId || input.currentPeriod !== input.period) return false;
   const msLeft = input.endsAt.getTime() - (input.now ?? new Date()).getTime();
   return msLeft > renewalWindowDays(input.reminderDays) * 86_400_000;
 }

@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     if (period) {
       // A subscription period: the plan's price for that period, whatever the site already owns of it.
       if (pkg.monthlyPrice === null) return fail(409, "این بسته به‌عنوان پلن اشتراک عرضه نمی‌شود.");
-      if (renewalTooEarly({ endsAt: site.expiresAt ? contractEndsAt(site.expiresAt) : null, planId: site.planId, packageId: packageId ?? "", reminderDays: (subscriptionSettings ?? DEFAULT_SUBSCRIPTION_SETTINGS).reminderDays })) return fail(409, "هنوز زمان تمدید این پلن نرسیده است.");
+      if (renewalTooEarly({ endsAt: site.expiresAt ? contractEndsAt(site.expiresAt) : null, planId: site.planId, currentPeriod: site.period, packageId: packageId ?? "", period, reminderDays: (subscriptionSettings ?? DEFAULT_SUBSCRIPTION_SETTINGS).reminderDays })) return fail(409, "هنوز زمان تمدید این پلن نرسیده است.");
       amountToman = periodPrice(Number(pkg.monthlyPrice), period, subscriptionSettings ?? DEFAULT_SUBSCRIPTION_SETTINGS);
       title = `اشتراک ${pkg.name}`;
     } else {
