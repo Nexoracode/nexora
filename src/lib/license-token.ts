@@ -26,6 +26,14 @@ export function generateLicenseKey() {
 }
 
 /** Compares hosts ignoring case, a leading `www.` and any port. */
+/**
+ * The instant a contract really ends. The panel stores the expiry as the picked date at 00:00 UTC,
+ * but a contract "until" a day runs through that whole day, so it ends at the close of that day in Tehran.
+ */
+export function contractEndsAt(expiresAt: Date): Date {
+  return new Date(`${expiresAt.toISOString().slice(0, 10)}T23:59:59.999+03:30`);
+}
+
 export function normalizeDomain(value: string) {
   return value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/:\d+$/, "").replace(/^www\./, "");
 }

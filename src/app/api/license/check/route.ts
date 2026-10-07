@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { getOnlinePaymentConfig } from "@/lib/payment-config";
-import { normalizeDomain, signLicenseToken } from "@/lib/license-token";
+import { contractEndsAt, normalizeDomain, signLicenseToken } from "@/lib/license-token";
 import { authenticateSite } from "@/lib/site-auth";
 
 const bodySchema = z.object({ licenseKey: z.string().min(8).max(100), domain: z.string().min(1).max(191), siteUrl: z.url().max(300).optional() });
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const { site } = auth;
 
   // An expired contract is served exactly like a suspension so the site locks its optional features.
-  const expired = site.expiresAt !== null && site.expiresAt.getTime() <= Date.now();
+  const expired = site.expiresAt !== null && contractEndsAt(site.expiresAt).getTime() <= Date.now();
   const status = site.status === "ACTIVE" && !expired ? "ACTIVE" : "SUSPENDED";
   const iat = Math.floor(Date.now() / 1000);
   const token = signLicenseToken(
