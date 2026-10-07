@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Boxes, Globe, Inbox, LogOut, Menu, Package, SlidersHorizontal, Wallet, X } from "lucide-react";
+import { Boxes, Globe, Inbox, LogOut, Menu, Package, SlidersHorizontal, Star, Wallet, X } from "lucide-react";
 import { logoutAction } from "@/app/actions";
 import { SubmitButton } from "@/components/ui";
 
@@ -12,6 +12,7 @@ const links = [
   { href: "/features", label: "قابلیت‌ها و قیمت", icon: SlidersHorizontal },
   { href: "/packages", label: "بسته‌ها", icon: Package },
   { href: "/requests", label: "درخواست‌های خرید", icon: Inbox },
+  { href: "/ratings", label: "امتیازها", icon: Star },
   { href: "/settings", label: "اطلاعات حساب", icon: Wallet },
 ] as const;
 
