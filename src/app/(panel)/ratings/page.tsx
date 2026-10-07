@@ -6,7 +6,9 @@ import { formatDateTime } from "@/lib/format";
 
 const fa = (value: number, digits = 0) => value.toLocaleString("fa-IR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-/** Which shops rate, and what each of them gave to which feature or package. */
+/** Which shops rate. Each row shows a few of their ratings; the rest are on the shop's own page. */
+const PREVIEW = 3;
+
 export default async function RatingsPage() {
   const ratings = await db.rating.findMany({
     orderBy: { updatedAt: "desc" },
@@ -37,7 +39,7 @@ export default async function RatingsPage() {
 
   return (
     <>
-      <PageHeader title="امتیازها" description="فروشگاه‌هایی که امتیاز داده‌اند و اینکه هرکدام به کدام قابلیت یا بسته چند ستاره داده‌اند." />
+      <PageHeader title="امتیازها" description="فروشگاه‌هایی که امتیاز داده‌اند. برای دیدن همه‌ی امتیازهای هر فروشگاه، روی ردیف آن بزنید." />
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         {stats.map((stat) => (
@@ -56,7 +58,7 @@ export default async function RatingsPage() {
               <th className="px-4 py-3 text-start font-medium">دامنه</th>
               <th className="px-4 py-3 text-start font-medium">تعداد امتیاز</th>
               <th className="px-4 py-3 text-start font-medium">میانگین</th>
-              <th className="px-4 py-3 text-start font-medium">امتیازهای داده‌شده</th>
+              <th className="px-4 py-3 text-start font-medium">امتیازها</th>
               <th className="px-4 py-3 text-start font-medium">آخرین امتیاز</th>
             </tr>
           </thead>
@@ -65,21 +67,25 @@ export default async function RatingsPage() {
               <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">هنوز هیچ فروشگاهی امتیاز نداده است.</td></tr>
             )}
             {rows.map((shop) => (
-              <tr key={shop.siteId} className="border-t border-slate-100 align-top">
-                <td className="px-4 py-3 font-bold">{shop.name}</td>
-                <td className="px-4 py-3"><Link href={`/sites/${shop.siteId}`} dir="ltr" className="inline-block text-brand">{shop.domain}</Link></td>
+              <tr key={shop.siteId} className="relative border-t border-slate-100 hover:bg-slate-50">
+                <td className="px-4 py-3 font-bold">
+                  {/* The link's overlay makes the whole row open the shop's ratings. */}
+                  <Link href={`/ratings/${shop.siteId}`} className="after:absolute after:inset-0">{shop.name}</Link>
+                </td>
+                <td className="px-4 py-3 text-slate-600"><span dir="ltr" className="inline-block">{shop.domain}</span></td>
                 <td className="px-4 py-3">{fa(shop.items.length)}</td>
                 <td className="px-4 py-3">
                   <span className="inline-flex items-center gap-1.5"><Star size={15} aria-hidden className="fill-amber-400 text-amber-400" /><strong>{fa(shop.average, 1)}</strong></span>
                 </td>
                 <td className="px-4 py-3">
-                  <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
-                    {shop.items.map((item) => (
+                  <ul className="m-0 flex list-none flex-wrap items-center gap-2 p-0">
+                    {shop.items.slice(0, PREVIEW).map((item) => (
                       <li key={item.id} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs">
                         {item.title}
                         <span className="inline-flex items-center gap-0.5 font-bold"><Star size={12} aria-hidden className="fill-amber-400 text-amber-400" />{fa(item.stars)}</span>
                       </li>
                     ))}
+                    {shop.items.length > PREVIEW && <li className="text-xs text-slate-500">و {fa(shop.items.length - PREVIEW)} مورد دیگر</li>}
                   </ul>
                 </td>
                 <td className="px-4 py-3 text-slate-500">{formatDateTime(shop.lastAt)}</td>
