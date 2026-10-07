@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { resolvePurchaseAction } from "@/app/actions";
+import { approvePurchaseAction } from "@/app/actions";
 import { PageHeader } from "@/components/page-header";
 import { SubmitButton } from "@/components/ui";
+import { RejectForm } from "./reject-form";
 import { db } from "@/lib/db";
 import { formatDateTime, formatToman } from "@/lib/format";
 
@@ -31,11 +32,12 @@ export default async function RequestsPage() {
           </div>
           <p className="text-sm">{request.method === "ONLINE" ? "پرداخت آنلاین · شناسه مرجع" : "کارت‌به‌کارت · کد پیگیری"}: <code dir="ltr">{request.trackingCode}</code></p>
           {request.note && <p className="text-sm text-slate-600">{request.note}</p>}
+          {request.status === "REJECTED" && request.rejectReason && <p className="text-sm text-red-700">دلیل رد: {request.rejectReason}</p>}
           <p className="text-xs text-slate-500">{formatDateTime(request.createdAt)}</p>
           {request.status === "PENDING" && (
             <div className="flex gap-3">
-              <form action={resolvePurchaseAction.bind(null, request.id, "APPROVED")}><SubmitButton>تأیید و فعال‌سازی</SubmitButton></form>
-              <form action={resolvePurchaseAction.bind(null, request.id, "REJECTED")}><SubmitButton variant="danger">رد</SubmitButton></form>
+              <form action={approvePurchaseAction.bind(null, request.id)}><SubmitButton>تأیید و فعال‌سازی</SubmitButton></form>
+              <RejectForm requestId={request.id} />
             </div>
           )}
         </div>

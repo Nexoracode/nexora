@@ -149,6 +149,8 @@ model PurchaseRequest {
   method       PurchaseMethod @default(CARD_TO_CARD)
   trackingCode String         @db.VarChar(60)
   note         String?        @db.VarChar(500)
+  // Why a request was rejected; the site shows it to the buyer.
+  rejectReason String?        @db.VarChar(500)
   // Online payments only: what was charged (toman), the gateway authority and reference, and where to send the buyer back.
   amount       Decimal?       @db.Decimal(14, 0)
   authority    String?        @unique @db.VarChar(64)

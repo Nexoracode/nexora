@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { rejectReasonSchema } from "@/lib/reject-reason";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -276,19 +277,29 @@ export async function saveOwnerSettingsAction(_: FormState, formData: FormData):
   return { saved: true };
 }
 
-export async function resolvePurchaseAction(requestId: string, decision: "APPROVED" | "REJECTED") {
+export async function approvePurchaseAction(requestId: string) {
   await requireOwnerAction();
-  if (decision === "APPROVED") {
-    await grantPurchase(requestId, "PENDING");
-  } else {
-    const request = await db.purchaseRequest.findUnique({ where: { id: requestId }, include: { feature: { select: { title: true } }, package: { select: { name: true } } } });
-    if (!request || request.status !== "PENDING") return;
-    const title = request.feature?.title ?? (request.package ? `بستهٔ ${request.package.name}` : "قابلیت");
-    await db.$transaction([
-      db.purchaseRequest.update({ where: { id: requestId }, data: { status: "REJECTED", resolvedAt: new Date() }, select: { id: true } }),
-      db.licenseEvent.create({ data: { siteId: request.siteId, type: "PURCHASE_RESOLVED", message: `خرید «${title}» رد شد.` } }),
-    ]);
-  }
+  await grantPurchase(requestId, "PENDING");
+  await refreshAfterResolving(requestId);
+}
+
+/** Rejects a pending request. The reason is required: it is what the buyer reads on the site. */
+export async function rejectPurchaseAction(requestId: string, _: FormState, formData: FormData): Promise<FormState> {
+  await requireOwnerAction();
+  const parsed = rejectReasonSchema.safeParse(formData.get("reason") ?? "");
+  if (!parsed.success) return { error: "فرم دارای خطاست.", fieldErrors: { reason: parsed.error.issues[0].message } };
+  const request = await db.purchaseRequest.findUnique({ where: { id: requestId }, include: { feature: { select: { title: true } }, package: { select: { name: true } } } });
+  if (!request || request.status !== "PENDING") return { error: "این درخواست دیگر در انتظار نیست." };
+  const title = request.feature?.title ?? (request.package ? `بستهٔ ${request.package.name}` : "قابلیت");
+  await db.$transaction([
+    db.purchaseRequest.update({ where: { id: requestId }, data: { status: "REJECTED", resolvedAt: new Date(), rejectReason: parsed.data }, select: { id: true } }),
+    db.licenseEvent.create({ data: { siteId: request.siteId, type: "PURCHASE_RESOLVED", message: `خرید «${title}» رد شد: ${parsed.data}`.slice(0, 255) } }),
+  ]);
+  await refreshAfterResolving(requestId);
+  return { saved: true };
+}
+
+async function refreshAfterResolving(requestId: string) {
   revalidatePath("/requests");
   // The layout carries the sidebar badge and header counts, so the whole tree is refreshed, not only this page.
   revalidatePath("/", "layout");

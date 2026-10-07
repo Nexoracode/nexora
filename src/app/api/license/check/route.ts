@@ -26,12 +26,29 @@ export async function POST(request: Request) {
     { siteId: site.id, domain: site.domain, status, features: status === "ACTIVE" ? site.features.map((f) => f.featureKey) : [], iat, exp: iat + env.LICENSE_TOKEN_DAYS * 86400 },
     env.LICENSE_PRIVATE_KEY,
   );
-  const [catalog, owner, pending, packages] = await Promise.all([
+  const REJECTION_DAYS = 30;
+  const [catalog, owner, pending, packages, rejectedRows] = await Promise.all([
     db.feature.findMany({ orderBy: { sortOrder: "asc" }, select: { key: true, title: true, description: true, group: true, price: true, isActive: true } }),
     db.ownerSettings.findUnique({ where: { id: "main" }, select: { holderName: true, cardNumber: true, sheba: true, bankName: true, contactPhone: true, note: true } }),
     db.purchaseRequest.findMany({ where: { siteId: site.id, status: "PENDING" }, select: { featureKey: true, packageId: true } }),
     db.package.findMany({ orderBy: { price: "asc" }, select: { id: true, name: true, price: true, features: { select: { featureKey: true } } } }),
+    db.purchaseRequest.findMany({
+      where: { siteId: site.id, status: "REJECTED", rejectReason: { not: null }, resolvedAt: { gte: new Date(Date.now() - REJECTION_DAYS * 86_400_000) } },
+      orderBy: { resolvedAt: "desc" },
+      select: { id: true, featureKey: true, packageId: true, rejectReason: true, resolvedAt: true },
+    }),
   ]);
+  // The latest rejection per feature or package, unless it has been bought since or is waiting again.
+  const ownedKeys = new Set(site.features.map((f) => f.featureKey));
+  const waiting = new Set(pending.map((p) => p.featureKey ?? p.packageId));
+  const seen = new Set<string>();
+  const rejected = rejectedRows.flatMap((row) => {
+    const target = row.featureKey ?? row.packageId;
+    if (!target || seen.has(target)) return [];
+    seen.add(target);
+    if (waiting.has(target) || (row.featureKey && ownedKeys.has(row.featureKey))) return [];
+    return [{ id: row.id, featureKey: row.featureKey, packageId: row.packageId, reason: row.rejectReason ?? "", at: row.resolvedAt?.toISOString() ?? null }];
+  });
   // The site tells us where to reach it. Only an address on its own registered domain is remembered, so a
   // caller cannot point our notifications at somebody else.
   const siteUrl = parsed.data.siteUrl ? new URL(parsed.data.siteUrl) : null;
@@ -46,6 +63,7 @@ export async function POST(request: Request) {
     onlineEnabled: getOnlinePaymentConfig() !== null,
     pending: pending.flatMap((p) => (p.featureKey ? [p.featureKey] : [])),
     pendingPackages: pending.flatMap((p) => (p.packageId ? [p.packageId] : [])),
+    rejected,
     packages: packages.map((p) => ({ id: p.id, name: p.name, price: Number(p.price), featureKeys: p.features.map((f) => f.featureKey) })),
   });
 }
