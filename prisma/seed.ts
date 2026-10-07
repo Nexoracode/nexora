@@ -39,6 +39,8 @@ async function main() {
   for (const [index, feature] of defaultFeatures.entries()) {
     await db.feature.upsert({ where: { key: feature.key }, create: { ...feature, sortOrder: index }, update: {} });
     await db.feature.updateMany({ where: { key: feature.key, description: null }, data: { description: feature.description } });
+    // A feature without a price (zero) gets the default one; a price set in the panel is kept.
+    await db.feature.updateMany({ where: { key: feature.key, price: 0 }, data: { price: feature.price } });
   }
   console.log(`Seeded ${defaultFeatures.length} features`);
 
