@@ -42,6 +42,8 @@ export async function POST(request: Request) {
       if (pkg.monthlyPrice === null) return fail(409, "این بسته به‌عنوان پلن اشتراک عرضه نمی‌شود.");
       title = `اشتراک ${pkg.name}`;
     } else {
+      // A package that is a subscription plan is only sold as a subscription, never as a one-off purchase.
+      if (pkg.monthlyPrice !== null) return fail(409, "این بسته فقط به‌صورت اشتراک خریداری می‌شود.");
       if (pkg.features.every((f) => owned.has(f.featureKey))) return fail(409, "همهٔ قابلیت‌های این بسته از قبل برای سایت فعال است.");
       title = `بستهٔ ${pkg.name}`;
     }

@@ -63,6 +63,8 @@ export async function POST(request: Request) {
       amountToman = periodPrice(Number(pkg.monthlyPrice), period, subscriptionSettings ?? DEFAULT_SUBSCRIPTION_SETTINGS);
       title = `اشتراک ${pkg.name}`;
     } else {
+      // A package that is a subscription plan is only sold as a subscription, never as a one-off purchase.
+      if (pkg.monthlyPrice !== null) return fail(409, "این بسته فقط به‌صورت اشتراک خریداری می‌شود.");
       if (packageFeatureKeys.every((key) => owned.has(key))) return fail(409, "همهٔ قابلیت‌های این بسته از قبل برای سایت فعال است.");
       amountToman = upgradeAmount({ packagePrice: Number(pkg.price), packageFeatureKeys, ownedKeys: owned, prices: new Map(features.map((f) => [f.key, Number(f.price)])) });
       title = `بستهٔ ${pkg.name}`;
