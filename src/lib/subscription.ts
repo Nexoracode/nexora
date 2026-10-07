@@ -77,3 +77,15 @@ export function renewedEnd(currentEnd: Date | null, period: SubscriptionPeriod, 
 }
 
 export const isSubscriptionPeriod = (value: unknown): value is SubscriptionPeriod => typeof value === "string" && value in SUBSCRIPTION_PERIODS;
+
+/** The current plan is renewed inside the first reminder window before its end (a week by default), not months ahead. */
+export function renewalWindowDays(reminderDays: string): number {
+  return Math.max(0, ...reminderDays.split(",").map(Number).filter(Number.isInteger)) || 7;
+}
+
+/** True while the site's own plan still has so long to run that renewing it now is too early. */
+export function renewalTooEarly(input: { endsAt: Date | null; planId: string | null; packageId: string; reminderDays: string; now?: Date }): boolean {
+  if (!input.endsAt || input.planId !== input.packageId) return false;
+  const msLeft = input.endsAt.getTime() - (input.now ?? new Date()).getTime();
+  return msLeft > renewalWindowDays(input.reminderDays) * 86_400_000;
+}

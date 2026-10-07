@@ -5,7 +5,8 @@ import { env } from "@/lib/env";
 import { getOnlinePaymentConfig } from "@/lib/payment-config";
 import { normalizeDomain } from "@/lib/license-token";
 import { tomanToRials, upgradeAmount } from "@/lib/pricing";
-import { DEFAULT_SUBSCRIPTION_SETTINGS, periodPrice } from "@/lib/subscription";
+import { contractEndsAt } from "@/lib/license-token";
+import { DEFAULT_SUBSCRIPTION_SETTINGS, periodPrice, renewalTooEarly } from "@/lib/subscription";
 import { authenticateSite } from "@/lib/site-auth";
 import { requestPayment } from "@/lib/zarinpal";
 
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
     if (period) {
       // A subscription period: the plan's price for that period, whatever the site already owns of it.
       if (pkg.monthlyPrice === null) return fail(409, "این بسته به‌عنوان پلن اشتراک عرضه نمی‌شود.");
+      if (renewalTooEarly({ endsAt: site.expiresAt ? contractEndsAt(site.expiresAt) : null, planId: site.planId, packageId: packageId ?? "", reminderDays: (subscriptionSettings ?? DEFAULT_SUBSCRIPTION_SETTINGS).reminderDays })) return fail(409, "هنوز زمان تمدید این پلن نرسیده است.");
       amountToman = periodPrice(Number(pkg.monthlyPrice), period, subscriptionSettings ?? DEFAULT_SUBSCRIPTION_SETTINGS);
       title = `اشتراک ${pkg.name}`;
     } else {
