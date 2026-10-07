@@ -50,6 +50,7 @@ model Feature {
   siteFeatures     SiteFeature[]
   packageFeatures  PackageFeature[]
   purchaseRequests PurchaseRequest[]
+  ratings          Rating[]
 }
 
 model Package {
@@ -60,6 +61,7 @@ model Package {
 
   features         PackageFeature[]
   purchaseRequests PurchaseRequest[]
+  ratings          Rating[]
 }
 
 model PackageFeature {
@@ -101,6 +103,7 @@ model Site {
   features         SiteFeature[]
   events           LicenseEvent[]
   purchaseRequests PurchaseRequest[]
+  ratings          Rating[]
 
   @@index([clientId])
 }
@@ -165,4 +168,25 @@ model PurchaseRequest {
 
   @@index([siteId, status])
   @@index([status, createdAt])
+}
+
+/// A site's star rating (1-5) of a feature or a ready package it bought; one per site and target, changeable.
+model Rating {
+  id         String   @id @default(cuid())
+  siteId     String
+  // Exactly one of featureKey / packageId is set.
+  featureKey String?  @db.VarChar(64)
+  packageId  String?
+  stars      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  site    Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  feature Feature? @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+  package Package? @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, featureKey])
+  @@unique([siteId, packageId])
+  @@index([featureKey])
+  @@index([packageId])
 }

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { getOnlinePaymentConfig } from "@/lib/payment-config";
 import { contractEndsAt, normalizeDomain, signLicenseToken } from "@/lib/license-token";
+import { loadRatings } from "@/lib/ratings";
 import { authenticateSite } from "@/lib/site-auth";
 
 const bodySchema = z.object({ licenseKey: z.string().min(8).max(100), domain: z.string().min(1).max(191), siteUrl: z.url().max(300).optional() });
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     env.LICENSE_PRIVATE_KEY,
   );
   const REJECTION_DAYS = 30;
-  const [catalog, owner, pending, packages, rejectedRows, approvedRows] = await Promise.all([
+  const [catalog, owner, pending, packages, rejectedRows, approvedRows, ratingData] = await Promise.all([
     db.feature.findMany({ orderBy: { sortOrder: "asc" }, select: { key: true, title: true, description: true, group: true, price: true, isActive: true } }),
     db.ownerSettings.findUnique({ where: { id: "main" }, select: { holderName: true, cardNumber: true, sheba: true, bankName: true, contactPhone: true, note: true } }),
     db.purchaseRequest.findMany({ where: { siteId: site.id, status: "PENDING" }, select: { featureKey: true, packageId: true } }),
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
       take: 20,
       select: { id: true, featureKey: true, packageId: true, resolvedAt: true },
     }),
+    loadRatings(site.id),
   ]);
   // The latest rejection per feature or package, unless it has been bought since or is waiting again.
   const ownedKeys = new Set(site.features.map((f) => f.featureKey));
@@ -71,6 +73,9 @@ export async function POST(request: Request) {
     pending: pending.flatMap((p) => (p.featureKey ? [p.featureKey] : [])),
     pendingPackages: pending.flatMap((p) => (p.packageId ? [p.packageId] : [])),
     rejected,
+    // Star summaries of every feature and package, and what this site itself gave.
+    ratings: ratingData.ratings,
+    myRatings: ratingData.myRatings,
     approved: approvedRows.map((row) => ({ id: row.id, featureKey: row.featureKey, packageId: row.packageId, at: row.resolvedAt?.toISOString() ?? null })),
     packages: packages.map((p) => ({ id: p.id, name: p.name, price: Number(p.price), featureKeys: p.features.map((f) => f.featureKey) })),
   });
