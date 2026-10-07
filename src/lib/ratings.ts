@@ -21,3 +21,18 @@ export async function loadRatings(siteId: string) {
   const ratings: RatingSummary[] = [...summaries.values()].map(({ total, ...entry }) => ({ ...entry, average: Math.round((total / entry.count) * 10) / 10 }));
   return { ratings, myRatings: mine };
 }
+
+export type RatingAverage = { average: number; count: number };
+
+/** Average and number of ratings per feature key and per package id, for the panel's tables. */
+export async function loadRatingAverages() {
+  const [features, packages] = await Promise.all([
+    db.rating.groupBy({ by: ["featureKey"], where: { featureKey: { not: null } }, _avg: { stars: true }, _count: { _all: true } }),
+    db.rating.groupBy({ by: ["packageId"], where: { packageId: { not: null } }, _avg: { stars: true }, _count: { _all: true } }),
+  ]);
+  const toEntry = (row: { _avg: { stars: number | null }; _count: { _all: number } }): RatingAverage => ({ average: Math.round((row._avg.stars ?? 0) * 10) / 10, count: row._count._all });
+  return {
+    features: Object.fromEntries(features.flatMap((row) => (row.featureKey ? [[row.featureKey, toEntry(row)]] : []))) as Record<string, RatingAverage>,
+    packages: Object.fromEntries(packages.flatMap((row) => (row.packageId ? [[row.packageId, toEntry(row)]] : []))) as Record<string, RatingAverage>,
+  };
+}

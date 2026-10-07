@@ -7,9 +7,11 @@ import type { FeatureOption } from "@/components/feature-grid";
 import { ConfirmForm } from "@/components/confirm-form";
 import { IconButton, IconLink, IconSubmitButton } from "@/components/icon-action";
 import { formatToman } from "@/lib/format";
+import type { RatingAverage } from "@/lib/ratings";
+import { RatingCell } from "@/components/rating-cell";
 
 /** One page of features; a row opens its details below it, the icons edit it or switch it on/off. */
-export function FeaturesTable({ features }: { features: FeatureOption[] }) {
+export function FeaturesTable({ features, ratings }: { features: FeatureOption[]; ratings: Record<string, RatingAverage> }) {
   const [selected, setSelected] = useState<string | null>(null);
   const toggle = (key: string) => setSelected((prev) => (prev === key ? null : key));
 
@@ -21,13 +23,14 @@ export function FeaturesTable({ features }: { features: FeatureOption[] }) {
             <th className="px-4 py-3 text-start font-medium">قابلیت</th>
             <th className="px-4 py-3 text-start font-medium">گروه</th>
             <th className="px-4 py-3 text-start font-medium">قیمت</th>
+            <th className="px-4 py-3 text-start font-medium">امتیاز</th>
             <th className="px-4 py-3 text-start font-medium">وضعیت</th>
             <th className="px-4 py-3 text-start font-medium">عملیات</th>
           </tr>
         </thead>
         <tbody>
           {features.length === 0 && (
-            <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-500">قابلیتی پیدا نشد.</td></tr>
+            <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">قابلیتی پیدا نشد.</td></tr>
           )}
           {features.map((feature) => {
             const isOpen = selected === feature.key;
@@ -46,6 +49,7 @@ export function FeaturesTable({ features }: { features: FeatureOption[] }) {
                   </td>
                   <td className="px-4 py-3 text-slate-500">{feature.group}</td>
                   <td className="px-4 py-3">{feature.price > 0 ? formatToman(feature.price) : <span className="text-slate-400">تعیین نشده</span>}</td>
+                  <td className="px-4 py-3"><RatingCell rating={ratings[feature.key]} /></td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${feature.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>{feature.isActive ? "فعال" : "غیرفعال"}</span>
                   </td>
@@ -73,7 +77,7 @@ export function FeaturesTable({ features }: { features: FeatureOption[] }) {
                 </tr>
                 {isOpen && (
                   <tr className="border-t border-indigo-100 bg-indigo-50/40">
-                    <td colSpan={5} className="px-4 py-4">
+                    <td colSpan={6} className="px-4 py-4">
                       <dl className="m-0 text-sm">
                         <div>
                           <dt className="text-xs text-slate-500">توضیح برای مشتری</dt>

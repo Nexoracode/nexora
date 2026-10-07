@@ -3,10 +3,13 @@ import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { getFeatureOptions, getPackageOptions } from "@/lib/catalog-queries";
 import { formatToman } from "@/lib/format";
+import { loadRatingAverages } from "@/lib/ratings";
+import { RatingCell } from "@/components/rating-cell";
 import { PackageRowActions } from "./package-actions";
 
 export default async function PackagesPage() {
   const [features, packages] = await Promise.all([getFeatureOptions(), getPackageOptions()]);
+  const ratings = (await loadRatingAverages()).packages;
   const priceByKey = new Map(features.map((feature) => [feature.key, feature.price]));
 
   return (
@@ -26,12 +29,13 @@ export default async function PackagesPage() {
               <th className="px-4 py-3 text-start font-medium">قابلیت‌ها</th>
               <th className="px-4 py-3 text-start font-medium">جمع تک‌تک قابلیت‌ها</th>
               <th className="px-4 py-3 text-start font-medium">صرفه‌جویی مشتری</th>
+              <th className="px-4 py-3 text-start font-medium">امتیاز</th>
               <th className="px-4 py-3 text-start font-medium">عملیات</th>
             </tr>
           </thead>
           <tbody>
             {packages.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">هنوز بسته‌ای ساخته نشده است.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-500">هنوز بسته‌ای ساخته نشده است.</td></tr>
             )}
             {packages.map((pkg) => {
               const sum = pkg.featureKeys.reduce((total, key) => total + (priceByKey.get(key) ?? 0), 0);
@@ -46,6 +50,7 @@ export default async function PackagesPage() {
                   <td className="px-4 py-3">{pkg.featureKeys.length.toLocaleString("fa-IR")}</td>
                   <td className="px-4 py-3 text-slate-500">{formatToman(sum)}</td>
                   <td className="px-4 py-3 text-green-700">{saving > 0 ? formatToman(saving) : "—"}</td>
+                  <td className="px-4 py-3"><RatingCell rating={ratings[pkg.id]} /></td>
                   <td className="relative z-10 px-4 py-3"><PackageRowActions id={pkg.id} name={pkg.name} /></td>
                 </tr>
               );
