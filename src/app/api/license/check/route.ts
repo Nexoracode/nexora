@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     env.LICENSE_PRIVATE_KEY,
   );
   const REJECTION_DAYS = 30;
-  const [catalog, owner, pending, packages, rejectedRows] = await Promise.all([
+  const [catalog, owner, pending, packages, rejectedRows, approvedRows] = await Promise.all([
     db.feature.findMany({ orderBy: { sortOrder: "asc" }, select: { key: true, title: true, description: true, group: true, price: true, isActive: true } }),
     db.ownerSettings.findUnique({ where: { id: "main" }, select: { holderName: true, cardNumber: true, sheba: true, bankName: true, contactPhone: true, note: true } }),
     db.purchaseRequest.findMany({ where: { siteId: site.id, status: "PENDING" }, select: { featureKey: true, packageId: true } }),
@@ -36,6 +36,13 @@ export async function POST(request: Request) {
       where: { siteId: site.id, status: "REJECTED", rejectReason: { not: null }, resolvedAt: { gte: new Date(Date.now() - REJECTION_DAYS * 86_400_000) } },
       orderBy: { resolvedAt: "desc" },
       select: { id: true, featureKey: true, packageId: true, rejectReason: true, resolvedAt: true },
+    }),
+    // Card-to-card purchases the owner approved lately; the site shows a "your purchase is active" page for each until it is acknowledged.
+    db.purchaseRequest.findMany({
+      where: { siteId: site.id, status: "APPROVED", method: "CARD_TO_CARD", resolvedAt: { gte: new Date(Date.now() - REJECTION_DAYS * 86_400_000) } },
+      orderBy: { resolvedAt: "desc" },
+      take: 20,
+      select: { id: true, featureKey: true, packageId: true, resolvedAt: true },
     }),
   ]);
   // The latest rejection per feature or package, unless it has been bought since or is waiting again.
@@ -64,6 +71,7 @@ export async function POST(request: Request) {
     pending: pending.flatMap((p) => (p.featureKey ? [p.featureKey] : [])),
     pendingPackages: pending.flatMap((p) => (p.packageId ? [p.packageId] : [])),
     rejected,
+    approved: approvedRows.map((row) => ({ id: row.id, featureKey: row.featureKey, packageId: row.packageId, at: row.resolvedAt?.toISOString() ?? null })),
     packages: packages.map((p) => ({ id: p.id, name: p.name, price: Number(p.price), featureKeys: p.features.map((f) => f.featureKey) })),
   });
 }
