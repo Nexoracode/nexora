@@ -103,7 +103,8 @@ export async function createSiteAction(_: FormState, formData: FormData): Promis
     },
     select: { id: true },
   });
-  revalidatePath("/");
+  // The layout carries the sidebar badge and header counts, so the whole tree is refreshed, not only this page.
+  revalidatePath("/", "layout");
   return { key: license.key, siteId: site.id };
 }
 
@@ -143,7 +144,8 @@ export async function updateSiteAction(siteId: string, _: FormState, formData: F
     },
     select: { id: true },
   });
-  revalidatePath("/");
+  // The layout carries the sidebar badge and header counts, so the whole tree is refreshed, not only this page.
+  revalidatePath("/", "layout");
   revalidatePath(`/sites/${siteId}`);
   after(() => notifySites(siteId));
   return { saved: true };
@@ -164,7 +166,8 @@ export async function rotateKeyAction(siteId: string): Promise<FormState> {
 export async function deleteSiteAction(siteId: string) {
   await requireOwnerAction();
   await db.site.delete({ where: { id: siteId }, select: { id: true } });
-  revalidatePath("/");
+  // The layout carries the sidebar badge and header counts, so the whole tree is refreshed, not only this page.
+  revalidatePath("/", "layout");
   redirect("/");
 }
 
@@ -287,7 +290,8 @@ export async function resolvePurchaseAction(requestId: string, decision: "APPROV
     ]);
   }
   revalidatePath("/requests");
-  revalidatePath("/");
+  // The layout carries the sidebar badge and header counts, so the whole tree is refreshed, not only this page.
+  revalidatePath("/", "layout");
   const request = await db.purchaseRequest.findUnique({ where: { id: requestId }, select: { siteId: true } });
   if (request) after(() => notifySites(request.siteId));
 }
