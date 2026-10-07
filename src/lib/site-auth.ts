@@ -5,7 +5,7 @@ import { hashLicenseKey, normalizeDomain } from "@/lib/license-token";
 export async function authenticateSite(licenseKey: string, domain: string) {
   const site = await db.site.findUnique({
     where: { licenseKeyHash: hashLicenseKey(licenseKey) },
-    select: { id: true, domain: true, status: true, expiresAt: true, features: { select: { featureKey: true } } },
+    select: { id: true, domain: true, status: true, expiresAt: true, planId: true, period: true, features: { select: { featureKey: true } } },
   });
   if (!site) return { ok: false, status: 401 } as const;
   if (normalizeDomain(site.domain) !== normalizeDomain(domain)) {

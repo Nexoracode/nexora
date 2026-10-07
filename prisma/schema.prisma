@@ -20,6 +20,12 @@ enum PurchaseStatus {
   FAILED
 }
 
+enum SubscriptionPeriod {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
 enum PurchaseMethod {
   CARD_TO_CARD
   ONLINE
@@ -64,6 +70,7 @@ model Package {
   features         PackageFeature[]
   purchaseRequests PurchaseRequest[]
   ratings          Rating[]
+  sites            Site[]           @relation("SitePlan")
 }
 
 model PackageFeature {
@@ -94,6 +101,9 @@ model Site {
   status        SiteStatus @default(ACTIVE)
   contractPrice Decimal    @default(0) @db.Decimal(14, 0)
   expiresAt     DateTime?
+  // The subscription plan (a package) and the period it was last paid for; expiresAt is where that subscription ends.
+  planId        String?
+  period        SubscriptionPeriod?
   notes         String?    @db.VarChar(1000)
   lastSeenAt    DateTime?
   // Where the site accepts "refresh now" messages; learned from its check-ins and limited to the registered domain.
@@ -102,6 +112,7 @@ model Site {
   updatedAt     DateTime   @updatedAt
 
   client   Client         @relation(fields: [clientId], references: [id])
+  plan     Package?       @relation("SitePlan", fields: [planId], references: [id], onDelete: SetNull)
   features         SiteFeature[]
   events           LicenseEvent[]
   purchaseRequests PurchaseRequest[]
@@ -156,6 +167,8 @@ model PurchaseRequest {
   note         String?        @db.VarChar(500)
   // Why a request was rejected; the site shows it to the buyer.
   rejectReason String?        @db.VarChar(500)
+  // A package bought as a subscription for this period; empty for a one-off purchase.
+  period       SubscriptionPeriod?
   // Online payments only: what was charged (toman), the gateway authority and reference, and where to send the buyer back.
   amount       Decimal?       @db.Decimal(14, 0)
   authority    String?        @unique @db.VarChar(64)

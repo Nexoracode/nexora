@@ -57,3 +57,23 @@ export function periodPrice(monthlyPrice: number, period: SubscriptionPeriod, se
   const discount = period === "QUARTERLY" ? settings.quarterlyDiscountPercent : period === "YEARLY" ? settings.yearlyDiscountPercent : 0;
   return Math.round((monthlyPrice * SUBSCRIPTION_PERIODS[period] * (100 - discount)) / 100);
 }
+
+/** `date` moved forward by whole calendar months (UTC); a day that does not exist in the target month lands on its last day. */
+export function addMonths(date: Date, months: number): Date {
+  const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1));
+  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
+  target.setUTCDate(Math.min(date.getUTCDate(), lastDay));
+  return target;
+}
+
+/** Midnight UTC of the day `date` falls on: the panel stores an expiry as a bare day. */
+export const startOfUtcDay = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+
+/** Where a subscription ends after paying for `period`: from the later of today and the current end, so renewing early loses nothing. */
+export function renewedEnd(currentEnd: Date | null, period: SubscriptionPeriod, now = new Date()): Date {
+  const today = startOfUtcDay(now);
+  const base = currentEnd && startOfUtcDay(currentEnd) > today ? startOfUtcDay(currentEnd) : today;
+  return addMonths(base, SUBSCRIPTION_PERIODS[period]);
+}
+
+export const isSubscriptionPeriod = (value: unknown): value is SubscriptionPeriod => typeof value === "string" && value in SUBSCRIPTION_PERIODS;

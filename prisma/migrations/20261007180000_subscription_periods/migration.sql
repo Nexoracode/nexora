@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE `PurchaseRequest` ADD COLUMN `period` ENUM('MONTHLY', 'QUARTERLY', 'YEARLY') NULL;
+
+-- AlterTable
+ALTER TABLE `Site` ADD COLUMN `planId` VARCHAR(191) NULL,
+    ADD COLUMN `period` ENUM('MONTHLY', 'QUARTERLY', 'YEARLY') NULL;
+
+-- AddForeignKey
+ALTER TABLE `Site` ADD CONSTRAINT `Site_planId_fkey` FOREIGN KEY (`planId`) REFERENCES `Package`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

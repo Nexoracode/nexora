@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { getOnlinePaymentConfig } from "@/lib/payment-config";
 import { contractEndsAt, normalizeDomain, signLicenseToken } from "@/lib/license-token";
+import { DEFAULT_SUBSCRIPTION_SETTINGS } from "@/lib/subscription";
 import { loadRatings } from "@/lib/ratings";
 import { authenticateSite } from "@/lib/site-auth";
 
@@ -20,7 +21,13 @@ export async function POST(request: Request) {
   const { site } = auth;
 
   // An expired contract is served exactly like a suspension so the site locks its optional features.
-  const expired = site.expiresAt !== null && contractEndsAt(site.expiresAt).getTime() <= Date.now();
+  const subscriptionSettings = (await db.subscriptionSettings.findUnique({ where: { id: "main" } })) ?? DEFAULT_SUBSCRIPTION_SETTINGS;
+  const endsAt = site.expiresAt ? contractEndsAt(site.expiresAt) : null;
+  const graceEndsAt = endsAt ? new Date(endsAt.getTime() + subscriptionSettings.graceDays * 86_400_000) : null;
+  const now = Date.now();
+  // After the end date the site keeps working through the grace days (features stay on), then is served as suspended.
+  const subscriptionState = !endsAt ? "NONE" : now <= endsAt.getTime() ? "ACTIVE" : now <= graceEndsAt!.getTime() ? "GRACE" : "EXPIRED";
+  const expired = subscriptionState === "EXPIRED";
   const status = site.status === "ACTIVE" && !expired ? "ACTIVE" : "SUSPENDED";
   const iat = Math.floor(Date.now() / 1000);
   const token = signLicenseToken(
@@ -73,6 +80,17 @@ export async function POST(request: Request) {
     pending: pending.flatMap((p) => (p.featureKey ? [p.featureKey] : [])),
     pendingPackages: pending.flatMap((p) => (p.packageId ? [p.packageId] : [])),
     rejected,
+    // Where the site's subscription stands, and the rules the site applies to it (reminders, what is locked after the grace days).
+    subscription: {
+      state: subscriptionState,
+      planId: site.planId,
+      period: site.period,
+      endsAt: endsAt?.toISOString() ?? null,
+      graceEndsAt: graceEndsAt?.toISOString() ?? null,
+      lockAfterGrace: subscriptionSettings.lockAfterGrace,
+      reminderDays: subscriptionSettings.reminderDays.split(",").map(Number).filter((day) => Number.isInteger(day) && day > 0),
+      retentionDays: subscriptionSettings.retentionDays,
+    },
     // Star summaries of every feature and package, and what this site itself gave.
     ratings: ratingData.ratings,
     myRatings: ratingData.myRatings,

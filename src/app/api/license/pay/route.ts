@@ -5,6 +5,7 @@ import { env } from "@/lib/env";
 import { getOnlinePaymentConfig } from "@/lib/payment-config";
 import { normalizeDomain } from "@/lib/license-token";
 import { tomanToRials, upgradeAmount } from "@/lib/pricing";
+import { DEFAULT_SUBSCRIPTION_SETTINGS, periodPrice } from "@/lib/subscription";
 import { authenticateSite } from "@/lib/site-auth";
 import { requestPayment } from "@/lib/zarinpal";
 
@@ -14,9 +15,12 @@ const bodySchema = z
     domain: z.string().min(1).max(191),
     featureKey: z.string().min(1).max(64).optional(),
     packageId: z.string().min(1).max(191).optional(),
+    // A package bought as a subscription for this period (renewal included) rather than as a one-off upgrade.
+    period: z.enum(["MONTHLY", "QUARTERLY", "YEARLY"]).optional(),
     returnUrl: z.url().max(500),
   })
-  .refine((body) => Boolean(body.featureKey) !== Boolean(body.packageId), { message: "exactly one of featureKey / packageId" });
+  .refine((body) => Boolean(body.featureKey) !== Boolean(body.packageId), { message: "exactly one of featureKey / packageId" })
+  .refine((body) => !body.period || Boolean(body.packageId), { message: "period needs a package" });
 
 const fail = (status: number, message: string) => NextResponse.json({ message }, { status });
 
@@ -24,7 +28,7 @@ const fail = (status: number, message: string) => NextResponse.json({ message },
 export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return fail(400, "اطلاعات درخواست نامعتبر است.");
-  const { licenseKey, domain, featureKey, packageId, returnUrl } = parsed.data;
+  const { licenseKey, domain, featureKey, packageId, period, returnUrl } = parsed.data;
 
   const auth = await authenticateSite(licenseKey, domain);
   if (!auth.ok) return fail(auth.status, "لایسنس نامعتبر است.");
@@ -46,20 +50,28 @@ export async function POST(request: Request) {
     amountToman = Number(feature.price);
     title = feature.title;
   } else {
-    const [pkg, features] = await Promise.all([
-      db.package.findUnique({ where: { id: packageId }, select: { name: true, price: true, features: { select: { featureKey: true } } } }),
+    const [pkg, features, subscriptionSettings] = await Promise.all([
+      db.package.findUnique({ where: { id: packageId }, select: { name: true, price: true, monthlyPrice: true, features: { select: { featureKey: true } } } }),
       db.feature.findMany({ select: { key: true, price: true } }),
+      db.subscriptionSettings.findUnique({ where: { id: "main" } }),
     ]);
     if (!pkg) return fail(404, "بسته پیدا نشد.");
     const packageFeatureKeys = pkg.features.map((f) => f.featureKey);
-    if (packageFeatureKeys.every((key) => owned.has(key))) return fail(409, "همهٔ قابلیت‌های این بسته از قبل برای سایت فعال است.");
-    amountToman = upgradeAmount({ packagePrice: Number(pkg.price), packageFeatureKeys, ownedKeys: owned, prices: new Map(features.map((f) => [f.key, Number(f.price)])) });
-    title = `بستهٔ ${pkg.name}`;
+    if (period) {
+      // A subscription period: the plan's price for that period, whatever the site already owns of it.
+      if (pkg.monthlyPrice === null) return fail(409, "این بسته به‌عنوان پلن اشتراک عرضه نمی‌شود.");
+      amountToman = periodPrice(Number(pkg.monthlyPrice), period, subscriptionSettings ?? DEFAULT_SUBSCRIPTION_SETTINGS);
+      title = `اشتراک ${pkg.name}`;
+    } else {
+      if (packageFeatureKeys.every((key) => owned.has(key))) return fail(409, "همهٔ قابلیت‌های این بسته از قبل برای سایت فعال است.");
+      amountToman = upgradeAmount({ packagePrice: Number(pkg.price), packageFeatureKeys, ownedKeys: owned, prices: new Map(features.map((f) => [f.key, Number(f.price)])) });
+      title = `بستهٔ ${pkg.name}`;
+    }
   }
   if (!Number.isSafeInteger(amountToman) || amountToman < 1) return fail(409, "برای این مورد هنوز قیمتی تعیین نشده است؛ با فروشنده تماس بگیرید.");
 
   const purchase = await db.purchaseRequest.create({
-    data: { siteId: site.id, featureKey, packageId, method: "ONLINE", status: "AWAITING_PAYMENT", trackingCode: "online", amount: amountToman, returnUrl },
+    data: { siteId: site.id, featureKey, packageId, period, method: "ONLINE", status: "AWAITING_PAYMENT", trackingCode: "online", amount: amountToman, returnUrl },
     select: { id: true },
   });
   try {

@@ -7,6 +7,8 @@ import { SubmitButton } from "@/components/ui";
 import { db } from "@/lib/db";
 import { formatDateTime, formatToman } from "@/lib/format";
 import { statusClass, statusLabel } from "@/lib/purchase-status";
+import { requestAmount, requestSubject } from "@/lib/request-labels";
+import { DEFAULT_SUBSCRIPTION_SETTINGS } from "@/lib/subscription";
 import { RejectForm } from "../reject-form";
 
 export default async function RequestPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,16 +17,17 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
     where: { id },
     include: {
       feature: { select: { title: true, price: true } },
-      package: { select: { name: true, price: true } },
+      package: { select: { name: true, price: true, monthlyPrice: true } },
       site: { select: { id: true, domain: true, client: { select: { name: true, phone: true } } } },
     },
   });
   if (!request) notFound();
 
-  const subject = request.feature ? request.feature.title : `بستهٔ ${request.package?.name ?? ""}`;
+  const settings = (await db.subscriptionSettings.findUnique({ where: { id: "main" } })) ?? DEFAULT_SUBSCRIPTION_SETTINGS;
+  const subject = requestSubject(request);
   const rows: Array<{ label: string; value: React.ReactNode }> = [
     { label: request.feature ? "قابلیت" : "بسته", value: subject },
-    { label: "مبلغ", value: formatToman(Number(request.amount ?? (request.feature ?? request.package)?.price ?? 0)) },
+    { label: "مبلغ", value: formatToman(requestAmount(request, settings)) },
     { label: "روش پرداخت", value: request.method === "ONLINE" ? "پرداخت آنلاین" : "کارت‌به‌کارت" },
     { label: request.method === "ONLINE" ? "شناسه مرجع" : "کد پیگیری", value: <code dir="ltr">{request.trackingCode}</code> },
     ...(request.refId ? [{ label: "شماره مرجع درگاه", value: <code dir="ltr">{request.refId}</code> }] : []),
