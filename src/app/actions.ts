@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { rejectReasonSchema } from "@/lib/reject-reason";
+import { subscriptionSettingsSchema } from "@/lib/subscription";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -212,11 +213,12 @@ export async function toggleFeatureActiveAction(key: string) {
   after(() => notifySites());
 }
 
-const packageSchema = z.object({ name: z.string().trim().min(1, "نام بسته را وارد کنید.").max(120, "نام بسته حداکثر ۱۲۰ نویسه است."), price: priceField });
+const monthlyPriceField = z.preprocess((value) => (String(value ?? "").trim() === "" ? undefined : value), priceField.optional());
+const packageSchema = z.object({ name: z.string().trim().min(1, "نام بسته را وارد کنید.").max(120, "نام بسته حداکثر ۱۲۰ نویسه است."), price: priceField, monthlyPrice: monthlyPriceField });
 
 export async function savePackageAction(packageId: string | null, _: FormState, formData: FormData): Promise<FormState> {
   await requireOwnerAction();
-  const parsed = packageSchema.safeParse({ name: formData.get("name"), price: formData.get("price") });
+  const parsed = packageSchema.safeParse({ name: formData.get("name"), price: formData.get("price"), monthlyPrice: formData.get("monthlyPrice") });
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
     for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
@@ -224,13 +226,13 @@ export async function savePackageAction(packageId: string | null, _: FormState, 
   }
   const features = (await validFeatureKeys(formData.getAll("features").map(String))).map((featureKey) => ({ featureKey }));
   if (packageId) {
-    await db.package.update({ where: { id: packageId }, data: { ...parsed.data, features: { deleteMany: {}, create: features } }, select: { id: true } });
+    await db.package.update({ where: { id: packageId }, data: { ...parsed.data, monthlyPrice: parsed.data.monthlyPrice ?? null, features: { deleteMany: {}, create: features } }, select: { id: true } });
     revalidatePath("/packages");
     revalidatePath(`/packages/${packageId}`);
     after(() => notifySites());
     return { saved: true };
   }
-  await db.package.create({ data: { ...parsed.data, features: { create: features } }, select: { id: true } });
+  await db.package.create({ data: { ...parsed.data, monthlyPrice: parsed.data.monthlyPrice ?? null, features: { create: features } }, select: { id: true } });
   revalidatePath("/packages");
   after(() => notifySites());
   redirect("/packages");
@@ -274,6 +276,27 @@ export async function saveOwnerSettingsAction(_: FormState, formData: FormData):
   await db.ownerSettings.upsert({ where: { id: "main" }, create: { id: "main", ...data }, update: data });
   revalidatePath("/settings");
   after(() => notifySites());
+  return { saved: true };
+}
+
+export async function saveSubscriptionSettingsAction(_: FormState, formData: FormData): Promise<FormState> {
+  await requireOwnerAction();
+  const field = (name: string) => normalizeDigits(String(formData.get(name) ?? "")).trim();
+  const parsed = subscriptionSettingsSchema.safeParse({
+    quarterlyDiscountPercent: field("quarterlyDiscountPercent"),
+    yearlyDiscountPercent: field("yearlyDiscountPercent"),
+    graceDays: field("graceDays"),
+    retentionDays: field("retentionDays"),
+    lockAfterGrace: String(formData.get("lockAfterGrace") ?? ""),
+    reminderDays: field("reminderDays"),
+  });
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
+    return formError(fieldErrors);
+  }
+  await db.subscriptionSettings.upsert({ where: { id: "main" }, create: { id: "main", ...parsed.data }, update: parsed.data });
+  revalidatePath("/subscription");
   return { saved: true };
 }
 

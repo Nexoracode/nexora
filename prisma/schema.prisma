@@ -57,6 +57,8 @@ model Package {
   id        String   @id @default(cuid())
   name      String   @db.VarChar(120)
   price     Decimal  @default(0) @db.Decimal(14, 0)
+  // The package as a subscription plan: its price per month (the quarterly and yearly prices follow from the discounts in SubscriptionSettings). Empty = not offered as a plan.
+  monthlyPrice Decimal? @db.Decimal(14, 0)
   createdAt DateTime @default(now())
 
   features         PackageFeature[]
@@ -189,4 +191,23 @@ model Rating {
   @@unique([siteId, packageId])
   @@index([featureKey])
   @@index([packageId])
+}
+
+/// What the site is locked out of once the grace period after a subscription ends has passed.
+enum SubscriptionLock {
+  OPTIONAL_FEATURES
+  ADMIN_PANEL
+  FULL
+}
+
+/// Subscription rules, editable in the panel: how much longer periods are discounted, how long a site may keep working after its subscription ends, and what then happens.
+model SubscriptionSettings {
+  id                       String           @id @default("main")
+  quarterlyDiscountPercent Int              @default(10)
+  yearlyDiscountPercent    Int              @default(20)
+  graceDays                Int              @default(7)
+  retentionDays            Int              @default(90)
+  lockAfterGrace           SubscriptionLock @default(ADMIN_PANEL)
+  // Days before the end on which the site reminds its owner, comma separated (for example "7,3,1").
+  reminderDays             String           @default("7,3,1") @db.VarChar(40)
 }

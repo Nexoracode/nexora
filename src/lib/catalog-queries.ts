@@ -8,7 +8,7 @@ export async function getFeatureOptions(): Promise<FeatureOption[]> {
 
 export async function getPackageOptions(): Promise<PackageOption[]> {
   const packages = await db.package.findMany({ orderBy: { createdAt: "asc" }, include: { features: { select: { featureKey: true } } } });
-  return packages.map((p) => ({ id: p.id, name: p.name, price: Number(p.price), featureKeys: p.features.map((f) => f.featureKey) }));
+  return packages.map((p) => ({ id: p.id, name: p.name, price: Number(p.price), monthlyPrice: p.monthlyPrice === null ? null : Number(p.monthlyPrice), featureKeys: p.features.map((f) => f.featureKey) }));
 }
 
 export async function getClientNames() {

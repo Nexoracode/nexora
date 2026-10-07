@@ -5,7 +5,7 @@ import { Check, ChevronDown } from "lucide-react";
 import { formatToman } from "@/lib/format";
 
 export type FeatureOption = { key: string; title: string; description: string; group: string; price: number; isActive: boolean };
-export type PackageOption = { id: string; name: string; price: number; featureKeys: string[] };
+export type PackageOption = { id: string; name: string; price: number; monthlyPrice: number | null; featureKeys: string[] };
 
 /**
  * Grouped checkbox list that submits as repeated `features` fields; reports the selection to its
