@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       where: { siteId: site.id, status: "APPROVED", method: "CARD_TO_CARD", resolvedAt: { gte: new Date(Date.now() - REJECTION_DAYS * 86_400_000) } },
       orderBy: { resolvedAt: "desc" },
       take: 20,
-      select: { id: true, featureKey: true, packageId: true, resolvedAt: true },
+      select: { id: true, featureKey: true, packageId: true, period: true, resolvedAt: true },
     }),
     loadRatings(site.id),
   ]);
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     // Star summaries of every feature and package, and what this site itself gave.
     ratings: ratingData.ratings,
     myRatings: ratingData.myRatings,
-    approved: approvedRows.map((row) => ({ id: row.id, featureKey: row.featureKey, packageId: row.packageId, at: row.resolvedAt?.toISOString() ?? null })),
+    approved: approvedRows.map((row) => ({ id: row.id, featureKey: row.featureKey, packageId: row.packageId, period: row.period, at: row.resolvedAt?.toISOString() ?? null })),
     packages: packages.map((p) => ({
       id: p.id,
       name: p.name,
