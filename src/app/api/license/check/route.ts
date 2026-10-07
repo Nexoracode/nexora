@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { getOnlinePaymentConfig } from "@/lib/payment-config";
 import { contractEndsAt, normalizeDomain, signLicenseToken } from "@/lib/license-token";
-import { DEFAULT_SUBSCRIPTION_SETTINGS } from "@/lib/subscription";
+import { DEFAULT_SUBSCRIPTION_SETTINGS, periodPrice } from "@/lib/subscription";
 import { loadRatings } from "@/lib/ratings";
 import { authenticateSite } from "@/lib/site-auth";
 
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     db.feature.findMany({ orderBy: { sortOrder: "asc" }, select: { key: true, title: true, description: true, group: true, price: true, isActive: true } }),
     db.ownerSettings.findUnique({ where: { id: "main" }, select: { holderName: true, cardNumber: true, sheba: true, bankName: true, contactPhone: true, note: true } }),
     db.purchaseRequest.findMany({ where: { siteId: site.id, status: "PENDING" }, select: { featureKey: true, packageId: true } }),
-    db.package.findMany({ orderBy: { price: "asc" }, select: { id: true, name: true, price: true, features: { select: { featureKey: true } } } }),
+    db.package.findMany({ orderBy: { price: "asc" }, select: { id: true, name: true, price: true, monthlyPrice: true, features: { select: { featureKey: true } } } }),
     db.purchaseRequest.findMany({
       where: { siteId: site.id, status: "REJECTED", rejectReason: { not: null }, resolvedAt: { gte: new Date(Date.now() - REJECTION_DAYS * 86_400_000) } },
       orderBy: { resolvedAt: "desc" },
@@ -95,6 +95,17 @@ export async function POST(request: Request) {
     ratings: ratingData.ratings,
     myRatings: ratingData.myRatings,
     approved: approvedRows.map((row) => ({ id: row.id, featureKey: row.featureKey, packageId: row.packageId, at: row.resolvedAt?.toISOString() ?? null })),
-    packages: packages.map((p) => ({ id: p.id, name: p.name, price: Number(p.price), featureKeys: p.features.map((f) => f.featureKey) })),
+    packages: packages.map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: Number(p.price),
+      featureKeys: p.features.map((f) => f.featureKey),
+      // A package offered as a subscription plan carries its price for each period, already discounted.
+      periodPrices: p.monthlyPrice === null ? null : {
+        MONTHLY: periodPrice(Number(p.monthlyPrice), "MONTHLY", subscriptionSettings),
+        QUARTERLY: periodPrice(Number(p.monthlyPrice), "QUARTERLY", subscriptionSettings),
+        YEARLY: periodPrice(Number(p.monthlyPrice), "YEARLY", subscriptionSettings),
+      },
+    })),
   });
 }
