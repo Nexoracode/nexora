@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { Pagination } from "@/components/pagination";
 import { db } from "@/lib/db";
 import { formatDateTime, formatToman } from "@/lib/format";
+import { readPage } from "@/lib/paging";
 import { statusClass, statusLabel } from "@/lib/purchase-status";
 import { requestAmount, requestSubject } from "@/lib/request-labels";
 import { DEFAULT_SUBSCRIPTION_SETTINGS } from "@/lib/subscription";
@@ -13,16 +15,19 @@ const filters = [
   { value: "REJECTED", label: "رد شده" },
 ] as const;
 
-type SearchParams = Promise<{ status?: string }>;
+type SearchParams = Promise<{ status?: string; page?: string }>;
 
 export default async function RequestsPage({ searchParams }: { searchParams: SearchParams }) {
-  const { status = "" } = await searchParams;
+  const { status = "", page: pageParam } = await searchParams;
   const active = filters.find((filter) => filter.value === status)?.value ?? "";
   const settings = (await db.subscriptionSettings.findUnique({ where: { id: "main" } })) ?? DEFAULT_SUBSCRIPTION_SETTINGS;
+  const where = { status: active ? (active as "PENDING" | "APPROVED" | "REJECTED") : { in: ["PENDING", "APPROVED", "REJECTED"] as Array<"PENDING" | "APPROVED" | "REJECTED"> } };
+  const { page, pageCount, skip, take } = readPage(pageParam, await db.purchaseRequest.count({ where }));
   const requests = await db.purchaseRequest.findMany({
-    where: { status: active ? (active as "PENDING" | "APPROVED" | "REJECTED") : { in: ["PENDING", "APPROVED", "REJECTED"] } },
+    where,
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    take: 100,
+    skip,
+    take,
     include: { feature: { select: { title: true, price: true } }, package: { select: { name: true, price: true, monthlyPrice: true } }, site: { select: { domain: true, client: { select: { name: true } } } } },
   });
 
@@ -79,6 +84,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageCount={pageCount} basePath="/requests" params={{ status: active }} />
     </>
   );
 }

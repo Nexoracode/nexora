@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { Pagination } from "@/components/pagination";
 import { getFeatureOptions, getPackageOptions } from "@/lib/catalog-queries";
 import { formatToman } from "@/lib/format";
+import { readPage } from "@/lib/paging";
 import { loadRatingAverages } from "@/lib/ratings";
 import { RatingCell } from "@/components/rating-cell";
 import { PackageRowActions } from "./package-actions";
 
-export default async function PackagesPage() {
-  const [features, packages] = await Promise.all([getFeatureOptions(), getPackageOptions()]);
+export default async function PackagesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const { page: pageParam } = await searchParams;
+  const [features, allPackages] = await Promise.all([getFeatureOptions(), getPackageOptions()]);
+  const { page, pageCount, skip, take } = readPage(pageParam, allPackages.length);
+  const packages = allPackages.slice(skip, skip + take);
   const ratings = (await loadRatingAverages()).packages;
   const priceByKey = new Map(features.map((feature) => [feature.key, feature.price]));
 
@@ -58,6 +63,7 @@ export default async function PackagesPage() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageCount={pageCount} basePath="/packages" />
     </>
   );
 }

@@ -4,9 +4,13 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 const WINDOW = 2;
 
 /** Page links for a server-rendered list; the current page lives in the `page` search param. */
-export function Pagination({ page, pageCount, basePath }: { page: number; pageCount: number; basePath: string }) {
+export function Pagination({ page, pageCount, basePath, params = {} }: { page: number; pageCount: number; basePath: string; /** Other search params of the list (filters), kept on every page link. */ params?: Record<string, string> }) {
   if (pageCount <= 1) return null;
-  const href = (target: number) => (target === 1 ? basePath : `${basePath}?page=${target}`);
+  const href = (target: number) => {
+    const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value));
+    if (target > 1) query.set("page", String(target));
+    return query.size ? `${basePath}?${query}` : basePath;
+  };
   const pages = Array.from({ length: pageCount }, (_, index) => index + 1).filter((value) => value === 1 || value === pageCount || Math.abs(value - page) <= WINDOW);
 
   // The base carries no colours: the idle and the current-page looks each bring their own, so they never fight over the background.

@@ -1,21 +1,28 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { Pagination } from "@/components/pagination";
 import { db } from "@/lib/db";
 import { SitesFilters } from "./sites-filters";
 import { formatDate, formatDateTime, formatToman } from "@/lib/format";
+import { readPage } from "@/lib/paging";
 
-type SearchParams = Promise<{ q?: string; status?: string }>;
+type SearchParams = Promise<{ q?: string; status?: string; page?: string }>;
 
 export default async function SitesPage({ searchParams }: { searchParams: SearchParams }) {
-  const { q = "", status = "" } = await searchParams;
+  const { q = "", status = "", page: pageParam } = await searchParams;
   const query = q.trim().slice(0, 100);
+  const statusFilter: "ACTIVE" | "SUSPENDED" | undefined = status === "ACTIVE" ? "ACTIVE" : status === "SUSPENDED" ? "SUSPENDED" : undefined;
+  const where = {
+    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(query ? { OR: [{ domain: { contains: query } }, { client: { name: { contains: query } } }] } : {}),
+  };
+  const { page, pageCount, skip, take } = readPage(pageParam, await db.site.count({ where }));
   const [sites, featureTotal, totals, activeCount] = await Promise.all([
     db.site.findMany({
-      where: {
-        ...(status === "ACTIVE" || status === "SUSPENDED" ? { status } : {}),
-        ...(query ? { OR: [{ domain: { contains: query } }, { client: { name: { contains: query } } }] } : {}),
-      },
+      where,
+      skip,
+      take,
       orderBy: { createdAt: "desc" },
       select: {
         id: true, domain: true, status: true, contractPrice: true, expiresAt: true, lastSeenAt: true,
@@ -89,6 +96,7 @@ export default async function SitesPage({ searchParams }: { searchParams: Search
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageCount={pageCount} basePath="/" params={{ q: query, status: statusFilter ?? "" }} />
     </>
   );
 }

@@ -1,18 +1,15 @@
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { db } from "@/lib/db";
+import { readPage } from "@/lib/paging";
 import { loadRatingAverages } from "@/lib/ratings";
 import { FeaturesTable } from "./features-table";
 
-const PAGE_SIZE = 8;
-
 export default async function FeaturesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const { page: pageParam } = await searchParams;
-  const total = await db.feature.count();
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const page = Math.min(pageCount, Math.max(1, Number.parseInt(pageParam ?? "1", 10) || 1));
+  const { page, pageCount, skip, take } = readPage(pageParam, await db.feature.count());
   const ratings = (await loadRatingAverages()).features;
-  const features = await db.feature.findMany({ orderBy: { sortOrder: "asc" }, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE });
+  const features = await db.feature.findMany({ orderBy: { sortOrder: "asc" }, skip, take });
 
   return (
     <>

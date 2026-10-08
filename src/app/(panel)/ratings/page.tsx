@@ -1,40 +1,56 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { Pagination } from "@/components/pagination";
 import { db } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
+import { readPage } from "@/lib/paging";
 
 const fa = (value: number, digits = 0) => value.toLocaleString("fa-IR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-/** Which shops rate. Each row shows a few of their ratings; the rest are on the shop's own page. */
+/** Chips shown per shop in the list; the rest are on the shop's own page. */
 const PREVIEW = 3;
 
-export default async function RatingsPage() {
-  const ratings = await db.rating.findMany({
-    orderBy: { updatedAt: "desc" },
-    select: {
-      id: true, stars: true, createdAt: true,
-      site: { select: { id: true, domain: true, client: { select: { name: true } } } },
-      feature: { select: { title: true } },
-      package: { select: { name: true } },
-    },
+/** Which shops rate, a page of shops at a time. */
+export default async function RatingsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const { page: pageParam } = await searchParams;
+  const [overall, shopTotal] = await Promise.all([
+    db.rating.aggregate({ _count: { _all: true }, _avg: { stars: true } }),
+    db.rating.groupBy({ by: ["siteId"] }).then((rows) => rows.length),
+  ]);
+  const { page, pageCount, skip, take } = readPage(pageParam, shopTotal);
+
+  // This page's shops, the most active first, with how many they gave, their average and their latest.
+  const grouped = await db.rating.groupBy({
+    by: ["siteId"],
+    _count: { _all: true },
+    _avg: { stars: true },
+    _max: { updatedAt: true },
+    orderBy: [{ _count: { siteId: "desc" } }, { _max: { updatedAt: "desc" } }],
+    skip,
+    take,
+  });
+  const siteIds = grouped.map((row) => row.siteId);
+  const [sites, ratings] = await Promise.all([
+    db.site.findMany({ where: { id: { in: siteIds } }, select: { id: true, domain: true, client: { select: { name: true } } } }),
+    db.rating.findMany({
+      where: { siteId: { in: siteIds } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, siteId: true, stars: true, feature: { select: { title: true } }, package: { select: { name: true } } },
+    }),
+  ]);
+  const siteById = new Map(sites.map((site) => [site.id, site]));
+  const rows = grouped.flatMap((row) => {
+    const site = siteById.get(row.siteId);
+    if (!site) return [];
+    const items = ratings.filter((rating) => rating.siteId === row.siteId).map((rating) => ({ id: rating.id, title: rating.feature ? rating.feature.title : `بستهٔ ${rating.package?.name ?? ""}`, stars: rating.stars }));
+    return [{ siteId: row.siteId, name: site.client.name, domain: site.domain, count: row._count._all, average: row._avg.stars ?? 0, lastAt: row._max.updatedAt ?? new Date(0), items }];
   });
 
-  const shops = new Map<string, { siteId: string; name: string; domain: string; items: Array<{ id: string; title: string; stars: number; at: Date }> }>();
-  for (const rating of ratings) {
-    const shop = shops.get(rating.site.id) ?? { siteId: rating.site.id, name: rating.site.client.name, domain: rating.site.domain, items: [] };
-    shop.items.push({ id: rating.id, title: rating.feature ? rating.feature.title : `بستهٔ ${rating.package?.name ?? ""}`, stars: rating.stars, at: rating.createdAt });
-    shops.set(rating.site.id, shop);
-  }
-  const rows = [...shops.values()]
-    .map((shop) => ({ ...shop, average: shop.items.reduce((sum, item) => sum + item.stars, 0) / shop.items.length, lastAt: shop.items.reduce((latest, item) => (item.at > latest ? item.at : latest), shop.items[0].at) }))
-    .sort((a, b) => b.items.length - a.items.length || b.lastAt.getTime() - a.lastAt.getTime());
-
-  const overall = ratings.length ? ratings.reduce((sum, rating) => sum + rating.stars, 0) / ratings.length : 0;
   const stats = [
-    { label: "کل امتیازها", value: fa(ratings.length) },
-    { label: "فروشگاه‌های امتیازدهنده", value: fa(rows.length) },
-    { label: "میانگین امتیازها", value: ratings.length ? fa(overall, 1) : "—" },
+    { label: "کل امتیازها", value: fa(overall._count._all) },
+    { label: "فروشگاه‌های امتیازدهنده", value: fa(shopTotal) },
+    { label: "میانگین امتیازها", value: overall._count._all ? fa(overall._avg.stars ?? 0, 1) : "—" },
   ];
 
   return (
@@ -73,7 +89,7 @@ export default async function RatingsPage() {
                   <Link href={`/ratings/${shop.siteId}`} className="after:absolute after:inset-0">{shop.name}</Link>
                 </td>
                 <td className="px-4 py-3 text-slate-600"><span dir="ltr" className="inline-block">{shop.domain}</span></td>
-                <td className="px-4 py-3">{fa(shop.items.length)}</td>
+                <td className="px-4 py-3">{fa(shop.count)}</td>
                 <td className="px-4 py-3">
                   <span className="inline-flex items-center gap-1.5"><Star size={15} aria-hidden className="fill-amber-400 text-amber-400" /><strong>{fa(shop.average, 1)}</strong></span>
                 </td>
@@ -85,7 +101,7 @@ export default async function RatingsPage() {
                         <span className="inline-flex items-center gap-0.5 font-bold"><Star size={12} aria-hidden className="fill-amber-400 text-amber-400" />{fa(item.stars)}</span>
                       </li>
                     ))}
-                    {shop.items.length > PREVIEW && <li className="text-xs text-slate-500">و {fa(shop.items.length - PREVIEW)} مورد دیگر</li>}
+                    {shop.count > PREVIEW && <li className="text-xs text-slate-500">و {fa(shop.count - PREVIEW)} مورد دیگر</li>}
                   </ul>
                 </td>
                 <td className="px-4 py-3 text-slate-500">{formatDateTime(shop.lastAt)}</td>
@@ -94,6 +110,7 @@ export default async function RatingsPage() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageCount={pageCount} basePath="/ratings" />
     </>
   );
 }
