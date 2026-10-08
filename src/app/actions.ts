@@ -48,8 +48,11 @@ const siteSchema = z.object({
   status: z.enum(["ACTIVE", "SUSPENDED"]),
   contractPrice: priceField,
   expiresAt: z.string().optional(),
+  planId: z.string().max(191).optional(),
+  period: z.enum(["MONTHLY", "QUARTERLY", "YEARLY"]).optional(),
   notes: z.string().trim().max(1000, "یادداشت حداکثر ۱۰۰۰ نویسه است.").optional(),
-});
+}).refine((site) => !site.planId || site.period, { path: ["period"], message: "دوره‌ی اشتراک را انتخاب کنید." })
+  .refine((site) => !site.period || site.planId, { path: ["planId"], message: "پلن اشتراک را انتخاب کنید." });
 
 function readSiteForm(formData: FormData) {
   const parsed = siteSchema.safeParse({
@@ -59,6 +62,8 @@ function readSiteForm(formData: FormData) {
     status: formData.get("status") ?? "ACTIVE",
     contractPrice: formData.get("contractPrice"),
     expiresAt: formData.get("expiresAt") || undefined,
+    planId: formData.get("planId") || undefined,
+    period: formData.get("period") || undefined,
     notes: formData.get("notes") || undefined,
   });
   if (!parsed.success) {
@@ -67,6 +72,13 @@ function readSiteForm(formData: FormData) {
     return { ok: false, fieldErrors } as const;
   }
   return { ok: true, data: parsed.data, featureKeys: formData.getAll("features").map(String) } as const;
+}
+
+/** The plan id when it is a package offered as a subscription, else null. */
+async function validPlanId(planId: string | undefined) {
+  if (!planId) return null;
+  const plan = await db.package.findFirst({ where: { id: planId, monthlyPrice: { not: null } }, select: { id: true } });
+  return plan?.id ?? null;
 }
 
 async function validFeatureKeys(keys: string[]) {
@@ -83,6 +95,8 @@ export async function createSiteAction(_: FormState, formData: FormData): Promis
   const { data } = result;
   if (await db.site.findUnique({ where: { domain: data.domain }, select: { id: true } })) return formError({ domain: "برای این دامنه قبلاً سایت ثبت شده است." });
 
+  const planId = await validPlanId(data.planId);
+  if (data.planId && !planId) return formError({ planId: "این پلن معتبر نیست." });
   const license = generateLicenseKey();
   const featureKeys = await validFeatureKeys(result.featureKeys);
   const client = await db.client.upsert({
@@ -99,6 +113,8 @@ export async function createSiteAction(_: FormState, formData: FormData): Promis
       status: data.status,
       contractPrice: data.contractPrice,
       expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+      planId,
+      period: planId ? data.period : null,
       notes: data.notes,
       features: { create: featureKeys.map((featureKey) => ({ featureKey })) },
       events: { create: { type: "SITE_CREATED", message: `سایت با ${featureKeys.length} قابلیت ثبت شد.` } },
@@ -120,6 +136,8 @@ export async function updateSiteAction(siteId: string, _: FormState, formData: F
   const clash = await db.site.findUnique({ where: { domain: data.domain }, select: { id: true } });
   if (clash && clash.id !== siteId) return formError({ domain: "برای این دامنه قبلاً سایت ثبت شده است." });
 
+  const planId = await validPlanId(data.planId);
+  if (data.planId && !planId) return formError({ planId: "این پلن معتبر نیست." });
   const featureKeys = await validFeatureKeys(result.featureKeys);
   const before = new Set(current.features.map((f) => f.featureKey));
   const featuresChanged = before.size !== featureKeys.length || featureKeys.some((k) => !before.has(k));
@@ -140,6 +158,8 @@ export async function updateSiteAction(siteId: string, _: FormState, formData: F
       status: data.status,
       contractPrice: data.contractPrice,
       expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+      planId,
+      period: planId ? data.period : null,
       notes: data.notes ?? null,
       features: { deleteMany: {}, create: featureKeys.map((featureKey) => ({ featureKey })) },
       events: { create: events },

@@ -36,6 +36,8 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
           status: site.status,
           contractPrice: Number(site.contractPrice),
           expiresAt: site.expiresAt ? site.expiresAt.toISOString().slice(0, 10) : "",
+          planId: site.planId ?? "",
+          period: site.period ?? "",
           notes: site.notes ?? "",
           featureKeys: site.features.map((f) => f.featureKey),
         }}
