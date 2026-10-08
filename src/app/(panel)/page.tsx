@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { ColumnFilter } from "@/components/column-filter";
 import { Pagination } from "@/components/pagination";
 import { db } from "@/lib/db";
-import { SitesFilters } from "./sites-filters";
 import { formatDate, formatDateTime, formatToman } from "@/lib/format";
 import { readPage } from "@/lib/paging";
 
@@ -59,15 +59,13 @@ export default async function SitesPage({ searchParams }: { searchParams: Search
         ))}
       </div>
 
-      <SitesFilters initialQuery={query} initialStatus={status === "ACTIVE" || status === "SUSPENDED" ? status : ""} />
-
       <div className="card overflow-x-auto !p-0">
         <table className="w-full min-w-[46rem] text-sm">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
-              <th className="px-4 py-3 text-start font-medium">نام سایت</th>
+              <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">نام سایت<ColumnFilter param="q" label="نام سایت یا دامنه" /></span></th>
               <th className="px-4 py-3 text-start font-medium">دامنه</th>
-              <th className="px-4 py-3 text-start font-medium">وضعیت</th>
+              <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">وضعیت<ColumnFilter param="status" label="وضعیت" options={[{ value: "ACTIVE", label: "فعال" }, { value: "SUSPENDED", label: "تعلیق" }]} /></span></th>
               <th className="px-4 py-3 text-start font-medium">قابلیت‌ها</th>
               <th className="px-4 py-3 text-start font-medium">قرارداد</th>
               <th className="px-4 py-3 text-start font-medium">انقضا</th>

@@ -16,13 +16,19 @@ const filters = [
   { value: "REJECTED", label: "رد شده" },
 ] as const;
 
-type SearchParams = Promise<{ status?: string; page?: string; size?: string }>;
+type SearchParams = Promise<{ status?: string; method?: string; q?: string; page?: string; size?: string }>;
 
 export default async function RequestsPage({ searchParams }: { searchParams: SearchParams }) {
-  const { status = "", page: pageParam, size: sizeParam } = await searchParams;
+  const { status = "", method = "", q = "", page: pageParam, size: sizeParam } = await searchParams;
   const active = filters.find((filter) => filter.value === status)?.value ?? "";
   const settings = (await db.subscriptionSettings.findUnique({ where: { id: "main" } })) ?? DEFAULT_SUBSCRIPTION_SETTINGS;
-  const where = { status: active ? (active as "PENDING" | "APPROVED" | "REJECTED") : { in: ["PENDING", "APPROVED", "REJECTED"] as Array<"PENDING" | "APPROVED" | "REJECTED"> } };
+  const methodFilter: "ONLINE" | "CARD_TO_CARD" | undefined = method === "ONLINE" ? "ONLINE" : method === "CARD_TO_CARD" ? "CARD_TO_CARD" : undefined;
+  const query = q.trim().slice(0, 100);
+  const where = {
+    status: active ? (active as "PENDING" | "APPROVED" | "REJECTED") : { in: ["PENDING", "APPROVED", "REJECTED"] as Array<"PENDING" | "APPROVED" | "REJECTED"> },
+    ...(methodFilter ? { method: methodFilter } : {}),
+    ...(query ? { OR: [{ feature: { title: { contains: query } } }, { package: { name: { contains: query } } }] } : {}),
+  };
   const total = await db.purchaseRequest.count({ where });
   const { page, pageCount, skip, take, size } = readPage(pageParam, total, sizeParam);
   const requests = await db.purchaseRequest.findMany({
@@ -69,21 +75,10 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
     <>
       <PageHeader title="درخواست‌های خرید" description="درخواست‌های سایت‌ها برای باز کردن قابلیت یا ارتقای بسته. برای دیدن جزئیات و تأیید یا رد، روی هر ردیف بزنید." />
 
-      <nav aria-label="فیلتر وضعیت" className="mb-4 flex flex-wrap gap-2">
-        {filters.map((filter) => (
-          <Link
-            key={filter.value}
-            href={filter.value ? `/requests?status=${filter.value}` : "/requests"}
-            aria-current={active === filter.value ? "page" : undefined}
-            className={`rounded-full border px-4 py-1.5 text-sm ${active === filter.value ? "border-brand bg-brand text-white" : "border-slate-200 bg-white text-slate-600"}`}
-          >
-            {filter.label}
-          </Link>
-        ))}
-      </nav>
+
 
       <RequestsTable rows={rows} />
-      <Pagination page={page} pageCount={pageCount} basePath="/requests" params={{ status: active }} size={size} total={total} />
+      <Pagination page={page} pageCount={pageCount} basePath="/requests" params={{ status: active, method: methodFilter ?? "", q: query }} size={size} total={total} />
     </>
   );
 }

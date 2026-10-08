@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { ColumnFilter } from "@/components/column-filter";
 import { Pagination } from "@/components/pagination";
 import { db } from "@/lib/db";
 import { formatToman } from "@/lib/format";
@@ -9,9 +10,10 @@ import { DEFAULT_SUBSCRIPTION_SETTINGS, periodLabels, periodPrice, type Subscrip
 const periods: SubscriptionPeriod[] = ["MONTHLY", "QUARTERLY", "YEARLY"];
 
 /** Plan prices per period, worked out from each package's monthly price and the discounts in the subscription settings. */
-export default async function PlansPage({ searchParams }: { searchParams: Promise<{ page?: string; size?: string }> }) {
-  const { page: pageParam, size: sizeParam } = await searchParams;
-  const where = { monthlyPrice: { not: null } };
+export default async function PlansPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string; size?: string }> }) {
+  const { q = "", page: pageParam, size: sizeParam } = await searchParams;
+  const query = q.trim().slice(0, 100);
+  const where = { monthlyPrice: { not: null }, ...(query ? { name: { contains: query } } : {}) };
   const total = await db.package.count({ where });
   const { page, pageCount, skip, take, size } = readPage(pageParam, total, sizeParam);
   const [stored, packages] = await Promise.all([
@@ -35,7 +37,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
         <table className="w-full min-w-[36rem] text-sm">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
-              <th className="px-4 py-3 text-start font-medium">پلن</th>
+              <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">پلن<ColumnFilter param="q" label="پلن" /></span></th>
               {periods.map((period) => <th key={period} className="px-4 py-3 text-start font-medium">{periodLabels[period]}</th>)}
             </tr>
           </thead>
@@ -53,7 +55,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           </tbody>
         </table>
       </div>
-      <Pagination page={page} pageCount={pageCount} basePath="/plans" size={size} total={total} />
+      <Pagination page={page} pageCount={pageCount} basePath="/plans" params={{ q: query }} size={size} total={total} />
     </>
   );
 }

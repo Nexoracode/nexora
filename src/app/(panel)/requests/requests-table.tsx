@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { approvePurchaseAction } from "@/app/actions";
+import { ColumnFilter } from "@/components/column-filter";
 import { Modal } from "@/components/modal";
 import { SubmitButton } from "@/components/ui";
 import { RejectForm } from "./reject-form";
@@ -34,12 +35,12 @@ export function RequestsTable({ rows }: { rows: RequestRow[] }) {
         <table className="w-full min-w-[56rem] text-sm">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
-              <th className="px-4 py-3 text-start font-medium">قابلیت / بسته</th>
+              <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">قابلیت / بسته<ColumnFilter param="q" label="قابلیت یا بسته" /></span></th>
               <th className="px-4 py-3 text-start font-medium">نام سایت</th>
               <th className="px-4 py-3 text-start font-medium">دامنه</th>
               <th className="px-4 py-3 text-start font-medium">مبلغ</th>
-              <th className="px-4 py-3 text-start font-medium">روش</th>
-              <th className="px-4 py-3 text-start font-medium">وضعیت</th>
+              <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">روش<ColumnFilter param="method" label="روش" options={[{ value: "ONLINE", label: "آنلاین" }, { value: "CARD_TO_CARD", label: "کارت‌به‌کارت" }]} /></span></th>
+              <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">وضعیت<ColumnFilter param="status" label="وضعیت" options={[{ value: "PENDING", label: "در انتظار" }, { value: "APPROVED", label: "تأیید شده" }, { value: "REJECTED", label: "رد شده" }]} /></span></th>
               <th className="px-4 py-3 text-start font-medium">تاریخ</th>
             </tr>
           </thead>

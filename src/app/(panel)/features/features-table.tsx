@@ -4,6 +4,7 @@ import { Fragment, useState } from "react";
 import { Pencil, Power, PowerOff } from "lucide-react";
 import { toggleFeatureActiveAction } from "@/app/actions";
 import type { FeatureOption } from "@/components/feature-grid";
+import { ColumnFilter } from "@/components/column-filter";
 import { ConfirmForm } from "@/components/confirm-form";
 import { IconButton, IconLink, IconSubmitButton } from "@/components/icon-action";
 import { formatToman } from "@/lib/format";
@@ -11,7 +12,7 @@ import type { RatingAverage } from "@/lib/ratings";
 import { RatingCell } from "@/components/rating-cell";
 
 /** One page of features; a row opens its details below it, the icons edit it or switch it on/off. */
-export function FeaturesTable({ features, ratings }: { features: FeatureOption[]; ratings: Record<string, RatingAverage> }) {
+export function FeaturesTable({ features, ratings, groups }: { features: FeatureOption[]; ratings: Record<string, RatingAverage>; groups: string[] }) {
   const [selected, setSelected] = useState<string | null>(null);
   const toggle = (key: string) => setSelected((prev) => (prev === key ? null : key));
 
@@ -20,11 +21,11 @@ export function FeaturesTable({ features, ratings }: { features: FeatureOption[]
       <table className="w-full min-w-[44rem] text-sm">
         <thead className="bg-slate-50 text-slate-500">
           <tr>
-            <th className="px-4 py-3 text-start font-medium">قابلیت</th>
-            <th className="px-4 py-3 text-start font-medium">گروه</th>
+            <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">قابلیت<ColumnFilter param="q" label="قابلیت" /></span></th>
+            <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">گروه<ColumnFilter param="group" label="گروه" options={groups.map((group) => ({ value: group, label: group }))} /></span></th>
             <th className="px-4 py-3 text-start font-medium">قیمت</th>
             <th className="px-4 py-3 text-start font-medium">امتیاز</th>
-            <th className="px-4 py-3 text-start font-medium">وضعیت</th>
+            <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">وضعیت<ColumnFilter param="active" label="وضعیت" options={[{ value: "yes", label: "فعال" }, { value: "no", label: "غیرفعال" }]} /></span></th>
             <th className="px-4 py-3 text-start font-medium">عملیات</th>
           </tr>
         </thead>

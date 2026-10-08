@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Star } from "lucide-react";
+import { ColumnFilter } from "@/components/column-filter";
 import { Modal } from "@/components/modal";
 
 export type ShopRatings = {
@@ -37,7 +38,7 @@ export function RatingsTable({ shops }: { shops: ShopRatings[] }) {
         <table className="w-full min-w-[52rem] text-sm">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
-              <th className="px-4 py-3 text-start font-medium">نام سایت</th>
+              <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">نام سایت<ColumnFilter param="q" label="نام سایت یا دامنه" /></span></th>
               <th className="px-4 py-3 text-start font-medium">دامنه</th>
               <th className="px-4 py-3 text-start font-medium">تعداد امتیاز</th>
               <th className="px-4 py-3 text-start font-medium">میانگین</th>

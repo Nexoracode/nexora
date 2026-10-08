@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { ColumnFilter } from "@/components/column-filter";
 import { Pagination } from "@/components/pagination";
 import { getFeatureOptions, getPackageOptions } from "@/lib/catalog-queries";
 import { formatToman } from "@/lib/format";
@@ -9,9 +10,11 @@ import { loadRatingAverages } from "@/lib/ratings";
 import { RatingCell } from "@/components/rating-cell";
 import { PackageRowActions } from "./package-actions";
 
-export default async function PackagesPage({ searchParams }: { searchParams: Promise<{ page?: string; size?: string }> }) {
-  const { page: pageParam, size: sizeParam } = await searchParams;
-  const [features, allPackages] = await Promise.all([getFeatureOptions(), getPackageOptions()]);
+export default async function PackagesPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string; size?: string }> }) {
+  const { q = "", page: pageParam, size: sizeParam } = await searchParams;
+  const query = q.trim().slice(0, 100);
+  const [features, everyPackage] = await Promise.all([getFeatureOptions(), getPackageOptions()]);
+  const allPackages = query ? everyPackage.filter((pkg) => pkg.name.includes(query)) : everyPackage;
   const { page, pageCount, skip, take, size } = readPage(pageParam, allPackages.length, sizeParam);
   const packages = allPackages.slice(skip, skip + take);
   const ratings = (await loadRatingAverages()).packages;
@@ -29,7 +32,7 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
         <table className="w-full min-w-[44rem] text-sm">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
-              <th className="px-4 py-3 text-start font-medium">بسته</th>
+              <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">بسته<ColumnFilter param="q" label="بسته" /></span></th>
               <th className="px-4 py-3 text-start font-medium">قیمت</th>
               <th className="px-4 py-3 text-start font-medium">قابلیت‌ها</th>
               <th className="px-4 py-3 text-start font-medium">جمع تک‌تک قابلیت‌ها</th>
@@ -63,7 +66,7 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
           </tbody>
         </table>
       </div>
-      <Pagination page={page} pageCount={pageCount} basePath="/packages" size={size} total={allPackages.length} />
+      <Pagination page={page} pageCount={pageCount} basePath="/packages" params={{ q: query }} size={size} total={allPackages.length} />
     </>
   );
 }

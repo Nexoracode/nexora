@@ -8,17 +8,20 @@ import { RatingsTable, type ShopRatings } from "./ratings-table";
 const fa = (value: number, digits = 0) => value.toLocaleString("fa-IR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
 /** Which shops rate, a page of shops at a time. */
-export default async function RatingsPage({ searchParams }: { searchParams: Promise<{ page?: string; size?: string }> }) {
-  const { page: pageParam, size: sizeParam } = await searchParams;
+export default async function RatingsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string; size?: string }> }) {
+  const { q = "", page: pageParam, size: sizeParam } = await searchParams;
+  const query = q.trim().slice(0, 100);
+  const where = query ? { site: { OR: [{ domain: { contains: query } }, { client: { name: { contains: query } } }] } } : {};
   const [overall, shopTotal] = await Promise.all([
     db.rating.aggregate({ _count: { _all: true }, _avg: { stars: true } }),
-    db.rating.groupBy({ by: ["siteId"] }).then((rows) => rows.length),
+    db.rating.groupBy({ by: ["siteId"], where }).then((rows) => rows.length),
   ]);
   const { page, pageCount, skip, take, size } = readPage(pageParam, shopTotal, sizeParam);
 
   // This page's shops, the most active first, with how many they gave, their average and their latest.
   const grouped = await db.rating.groupBy({
     by: ["siteId"],
+    where,
     _count: { _all: true },
     _avg: { stars: true },
     _max: { updatedAt: true },
@@ -65,7 +68,7 @@ export default async function RatingsPage({ searchParams }: { searchParams: Prom
       </div>
 
       <RatingsTable shops={shops} />
-      <Pagination page={page} pageCount={pageCount} basePath="/ratings" size={size} total={shopTotal} />
+      <Pagination page={page} pageCount={pageCount} basePath="/ratings" params={{ q: query }} size={size} total={shopTotal} />
     </>
   );
 }
