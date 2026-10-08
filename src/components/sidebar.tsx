@@ -7,15 +7,30 @@ import { Boxes, CalendarClock, Globe, Layers, Inbox, LogOut, Menu, Package, Slid
 import { logoutAction } from "@/app/actions";
 import { SubmitButton } from "@/components/ui";
 
-const links = [
-  { href: "/", label: "سایت‌ها", icon: Globe },
-  { href: "/features", label: "قابلیت‌ها و قیمت", icon: SlidersHorizontal },
-  { href: "/packages", label: "بسته‌ها", icon: Package },
-  { href: "/requests", label: "درخواست‌های خرید", icon: Inbox },
-  { href: "/ratings", label: "امتیازها", icon: Star },
-  { href: "/plans", label: "پلن‌های اشتراک", icon: Layers },
-  { href: "/subscription", label: "تنظیمات اشتراک", icon: CalendarClock },
-  { href: "/settings", label: "اطلاعات حساب", icon: Wallet },
+const groups = [
+  {
+    title: "فروش",
+    links: [
+      { href: "/", label: "سایت‌ها", icon: Globe },
+      { href: "/requests", label: "درخواست‌های خرید", icon: Inbox },
+      { href: "/ratings", label: "امتیازها", icon: Star },
+    ],
+  },
+  {
+    title: "کاتالوگ",
+    links: [
+      { href: "/features", label: "قابلیت‌ها و قیمت", icon: SlidersHorizontal },
+      { href: "/packages", label: "بسته‌ها", icon: Package },
+      { href: "/plans", label: "پلن‌های اشتراک", icon: Layers },
+    ],
+  },
+  {
+    title: "تنظیمات",
+    links: [
+      { href: "/subscription", label: "تنظیمات اشتراک", icon: CalendarClock },
+      { href: "/settings", label: "اطلاعات حساب", icon: Wallet },
+    ],
+  },
 ] as const;
 
 const isActive = (href: string, pathname: string) => (href === "/" ? pathname === "/" || pathname.startsWith("/sites") : pathname.startsWith(href));
@@ -45,22 +60,27 @@ export function Sidebar({ pendingRequests }: { pendingRequests: number }) {
         aria-label="منوی اصلی"
       >
         <div className="flex items-center gap-2 px-5 py-5 text-lg font-bold"><Boxes size={22} className="text-brand" aria-hidden />نکسورا</div>
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3">
-          {links.map(({ href, label, icon: Icon }) => {
-            const active = isActive(href, pathname);
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${active ? "bg-indigo-50 font-bold text-brand" : "text-slate-600 hover:bg-slate-50"}`}
-              >
-                <Icon size={18} aria-hidden />
-                <span className="flex-1">{label}</span>
-                {href === "/requests" && pendingRequests > 0 && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-medium text-white">{pendingRequests.toLocaleString("fa-IR")}</span>}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-3">
+          {groups.map((group) => (
+            <div key={group.title} role="group" aria-label={group.title} className="space-y-1">
+              <p className="m-0 px-3 pb-1 text-xs font-medium text-slate-400">{group.title}</p>
+              {group.links.map(({ href, label, icon: Icon }) => {
+                const active = isActive(href, pathname);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${active ? "bg-indigo-50 font-bold text-brand" : "text-slate-600 hover:bg-slate-50"}`}
+                  >
+                    <Icon size={18} aria-hidden />
+                    <span className="flex-1">{label}</span>
+                    {href === "/requests" && pendingRequests > 0 && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-medium text-white">{pendingRequests.toLocaleString("fa-IR")}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
         <form action={logoutAction} className="border-t border-slate-100 p-3">
           <SubmitButton variant="ghost"><LogOut size={16} aria-hidden />خروج</SubmitButton>
