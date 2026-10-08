@@ -1,15 +1,11 @@
-import Link from "next/link";
-import { Star } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { db } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { readPage } from "@/lib/paging";
+import { RatingsTable, type ShopRatings } from "./ratings-table";
 
 const fa = (value: number, digits = 0) => value.toLocaleString("fa-IR", { minimumFractionDigits: digits, maximumFractionDigits: digits });
-
-/** Chips shown per shop in the list; the rest are on the shop's own page. */
-const PREVIEW = 3;
 
 /** Which shops rate, a page of shops at a time. */
 export default async function RatingsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
@@ -36,15 +32,17 @@ export default async function RatingsPage({ searchParams }: { searchParams: Prom
     db.rating.findMany({
       where: { siteId: { in: siteIds } },
       orderBy: { createdAt: "desc" },
-      select: { id: true, siteId: true, stars: true, feature: { select: { title: true } }, package: { select: { name: true } } },
+      select: { id: true, siteId: true, stars: true, createdAt: true, feature: { select: { title: true } }, package: { select: { name: true } } },
     }),
   ]);
   const siteById = new Map(sites.map((site) => [site.id, site]));
-  const rows = grouped.flatMap((row) => {
+  const shops: ShopRatings[] = grouped.flatMap((row) => {
     const site = siteById.get(row.siteId);
     if (!site) return [];
-    const items = ratings.filter((rating) => rating.siteId === row.siteId).map((rating) => ({ id: rating.id, title: rating.feature ? rating.feature.title : `بستهٔ ${rating.package?.name ?? ""}`, stars: rating.stars }));
-    return [{ siteId: row.siteId, name: site.client.name, domain: site.domain, count: row._count._all, average: row._avg.stars ?? 0, lastAt: row._max.updatedAt ?? new Date(0), items }];
+    const items = ratings
+      .filter((rating) => rating.siteId === row.siteId)
+      .map((rating) => ({ id: rating.id, title: rating.feature ? rating.feature.title : rating.package?.name ?? "", kind: rating.feature ? "قابلیت" : "بسته", stars: rating.stars, at: formatDateTime(rating.createdAt) }));
+    return [{ siteId: row.siteId, name: site.client.name, domain: site.domain, count: row._count._all, average: row._avg.stars ?? 0, lastAt: formatDateTime(row._max.updatedAt ?? new Date(0)), items }];
   });
 
   const stats = [
@@ -66,50 +64,7 @@ export default async function RatingsPage({ searchParams }: { searchParams: Prom
         ))}
       </div>
 
-      <div className="card overflow-x-auto !p-0">
-        <table className="w-full min-w-[52rem] text-sm">
-          <thead className="bg-slate-50 text-slate-500">
-            <tr>
-              <th className="px-4 py-3 text-start font-medium">نام سایت</th>
-              <th className="px-4 py-3 text-start font-medium">دامنه</th>
-              <th className="px-4 py-3 text-start font-medium">تعداد امتیاز</th>
-              <th className="px-4 py-3 text-start font-medium">میانگین</th>
-              <th className="px-4 py-3 text-start font-medium">امتیازها</th>
-              <th className="px-4 py-3 text-start font-medium">آخرین امتیاز</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">هنوز هیچ فروشگاهی امتیاز نداده است.</td></tr>
-            )}
-            {rows.map((shop) => (
-              <tr key={shop.siteId} className="relative border-t border-slate-100 hover:bg-slate-50">
-                <td className="px-4 py-3 font-bold">
-                  {/* The link's overlay makes the whole row open the shop's ratings. */}
-                  <Link href={`/ratings/${shop.siteId}`} className="after:absolute after:inset-0">{shop.name}</Link>
-                </td>
-                <td className="px-4 py-3 text-slate-600"><span dir="ltr" className="inline-block">{shop.domain}</span></td>
-                <td className="px-4 py-3">{fa(shop.count)}</td>
-                <td className="px-4 py-3">
-                  <span className="inline-flex items-center gap-1.5"><Star size={15} aria-hidden className="fill-amber-400 text-amber-400" /><strong>{fa(shop.average, 1)}</strong></span>
-                </td>
-                <td className="px-4 py-3">
-                  <ul className="m-0 flex list-none flex-wrap items-center gap-2 p-0">
-                    {shop.items.slice(0, PREVIEW).map((item) => (
-                      <li key={item.id} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs">
-                        {item.title}
-                        <span className="inline-flex items-center gap-0.5 font-bold"><Star size={12} aria-hidden className="fill-amber-400 text-amber-400" />{fa(item.stars)}</span>
-                      </li>
-                    ))}
-                    {shop.count > PREVIEW && <li className="text-xs text-slate-500">و {fa(shop.count - PREVIEW)} مورد دیگر</li>}
-                  </ul>
-                </td>
-                <td className="px-4 py-3 text-slate-500">{formatDateTime(shop.lastAt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <RatingsTable shops={shops} />
       <Pagination page={page} pageCount={pageCount} basePath="/ratings" />
     </>
   );

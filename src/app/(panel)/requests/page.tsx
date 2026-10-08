@@ -6,6 +6,7 @@ import { formatDateTime, formatToman } from "@/lib/format";
 import { readPage } from "@/lib/paging";
 import { statusClass, statusLabel } from "@/lib/purchase-status";
 import { requestAmount, requestSubject } from "@/lib/request-labels";
+import { RequestsTable, type RequestRow } from "./requests-table";
 import { DEFAULT_SUBSCRIPTION_SETTINGS } from "@/lib/subscription";
 
 const filters = [
@@ -28,7 +29,39 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     skip,
     take,
-    include: { feature: { select: { title: true, price: true } }, package: { select: { name: true, price: true, monthlyPrice: true } }, site: { select: { domain: true, client: { select: { name: true } } } } },
+    include: { feature: { select: { title: true, price: true } }, package: { select: { name: true, price: true, monthlyPrice: true } }, site: { select: { domain: true, client: { select: { name: true, phone: true } } } } },
+  });
+
+  const rows: RequestRow[] = requests.map((request) => {
+    const subject = requestSubject(request);
+    const amount = formatToman(requestAmount(request, settings));
+    const method = request.method === "ONLINE" ? "پرداخت آنلاین" : "کارت‌به‌کارت";
+    return {
+      id: request.id,
+      subject,
+      shopName: request.site.client.name,
+      domain: request.site.domain,
+      amount,
+      method: request.method === "ONLINE" ? "آنلاین" : "کارت‌به‌کارت",
+      status: request.status,
+      statusLabel: statusLabel[request.status],
+      statusClass: statusClass[request.status],
+      createdAt: formatDateTime(request.createdAt),
+      details: [
+        { label: request.feature ? "قابلیت" : "بسته", value: subject },
+        { label: "مبلغ", value: amount },
+        { label: "روش پرداخت", value: method },
+        { label: request.method === "ONLINE" ? "شناسه مرجع" : "کد پیگیری", value: request.trackingCode, ltr: true },
+        ...(request.refId ? [{ label: "شماره مرجع درگاه", value: request.refId, ltr: true }] : []),
+        { label: "نام سایت", value: request.site.client.name },
+        { label: "دامنه", value: request.site.domain, ltr: true },
+        ...(request.site.client.phone ? [{ label: "تلفن مشتری", value: request.site.client.phone, ltr: true }] : []),
+        { label: "ثبت درخواست", value: formatDateTime(request.createdAt) },
+        ...(request.resolvedAt ? [{ label: "تعیین وضعیت", value: formatDateTime(request.resolvedAt) }] : []),
+      ],
+      note: request.note,
+      rejectReason: request.rejectReason,
+    };
   });
 
   return (
@@ -48,42 +81,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
         ))}
       </nav>
 
-      <div className="card overflow-x-auto !p-0">
-        <table className="w-full min-w-[56rem] text-sm">
-          <thead className="bg-slate-50 text-slate-500">
-            <tr>
-              <th className="px-4 py-3 text-start font-medium">قابلیت / بسته</th>
-              <th className="px-4 py-3 text-start font-medium">نام سایت</th>
-              <th className="px-4 py-3 text-start font-medium">دامنه</th>
-              <th className="px-4 py-3 text-start font-medium">مبلغ</th>
-              <th className="px-4 py-3 text-start font-medium">روش</th>
-              <th className="px-4 py-3 text-start font-medium">وضعیت</th>
-              <th className="px-4 py-3 text-start font-medium">تاریخ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-500">درخواستی پیدا نشد.</td></tr>
-            )}
-            {requests.map((request) => (
-              <tr key={request.id} className="relative border-t border-slate-100 hover:bg-slate-50">
-                <td className="px-4 py-3 font-bold">
-                  {/* The link's overlay makes the whole row clickable without JavaScript. */}
-                  <Link href={`/requests/${request.id}`} className="after:absolute after:inset-0">{requestSubject(request)}</Link>
-                </td>
-                <td className="px-4 py-3">{request.site.client.name}</td>
-                <td className="px-4 py-3 text-slate-600"><span dir="ltr" className="inline-block">{request.site.domain}</span></td>
-                <td className="px-4 py-3">{formatToman(requestAmount(request, settings))}</td>
-                <td className="px-4 py-3 text-slate-600">{request.method === "ONLINE" ? "آنلاین" : "کارت‌به‌کارت"}</td>
-                <td className="px-4 py-3">
-                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusClass[request.status]}`}>{statusLabel[request.status]}</span>
-                </td>
-                <td className="px-4 py-3 text-slate-500">{formatDateTime(request.createdAt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <RequestsTable rows={rows} />
       <Pagination page={page} pageCount={pageCount} basePath="/requests" params={{ status: active }} />
     </>
   );
