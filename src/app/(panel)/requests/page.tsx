@@ -16,14 +16,15 @@ const filters = [
   { value: "REJECTED", label: "رد شده" },
 ] as const;
 
-type SearchParams = Promise<{ status?: string; page?: string }>;
+type SearchParams = Promise<{ status?: string; page?: string; size?: string }>;
 
 export default async function RequestsPage({ searchParams }: { searchParams: SearchParams }) {
-  const { status = "", page: pageParam } = await searchParams;
+  const { status = "", page: pageParam, size: sizeParam } = await searchParams;
   const active = filters.find((filter) => filter.value === status)?.value ?? "";
   const settings = (await db.subscriptionSettings.findUnique({ where: { id: "main" } })) ?? DEFAULT_SUBSCRIPTION_SETTINGS;
   const where = { status: active ? (active as "PENDING" | "APPROVED" | "REJECTED") : { in: ["PENDING", "APPROVED", "REJECTED"] as Array<"PENDING" | "APPROVED" | "REJECTED"> } };
-  const { page, pageCount, skip, take } = readPage(pageParam, await db.purchaseRequest.count({ where }));
+  const total = await db.purchaseRequest.count({ where });
+  const { page, pageCount, skip, take, size } = readPage(pageParam, total, sizeParam);
   const requests = await db.purchaseRequest.findMany({
     where,
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
@@ -82,7 +83,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
       </nav>
 
       <RequestsTable rows={rows} />
-      <Pagination page={page} pageCount={pageCount} basePath="/requests" params={{ status: active }} />
+      <Pagination page={page} pageCount={pageCount} basePath="/requests" params={{ status: active }} size={size} total={total} />
     </>
   );
 }

@@ -7,17 +7,18 @@ import { SitesFilters } from "./sites-filters";
 import { formatDate, formatDateTime, formatToman } from "@/lib/format";
 import { readPage } from "@/lib/paging";
 
-type SearchParams = Promise<{ q?: string; status?: string; page?: string }>;
+type SearchParams = Promise<{ q?: string; status?: string; page?: string; size?: string }>;
 
 export default async function SitesPage({ searchParams }: { searchParams: SearchParams }) {
-  const { q = "", status = "", page: pageParam } = await searchParams;
+  const { q = "", status = "", page: pageParam, size: sizeParam } = await searchParams;
   const query = q.trim().slice(0, 100);
   const statusFilter: "ACTIVE" | "SUSPENDED" | undefined = status === "ACTIVE" ? "ACTIVE" : status === "SUSPENDED" ? "SUSPENDED" : undefined;
   const where = {
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(query ? { OR: [{ domain: { contains: query } }, { client: { name: { contains: query } } }] } : {}),
   };
-  const { page, pageCount, skip, take } = readPage(pageParam, await db.site.count({ where }));
+  const total = await db.site.count({ where });
+  const { page, pageCount, skip, take, size } = readPage(pageParam, total, sizeParam);
   const [sites, featureTotal, totals, activeCount] = await Promise.all([
     db.site.findMany({
       where,
@@ -96,7 +97,7 @@ export default async function SitesPage({ searchParams }: { searchParams: Search
           </tbody>
         </table>
       </div>
-      <Pagination page={page} pageCount={pageCount} basePath="/" params={{ q: query, status: statusFilter ?? "" }} />
+      <Pagination page={page} pageCount={pageCount} basePath="/" params={{ q: query, status: statusFilter ?? "" }} size={size} total={total} />
     </>
   );
 }

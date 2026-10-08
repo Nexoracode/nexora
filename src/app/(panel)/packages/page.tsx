@@ -9,10 +9,10 @@ import { loadRatingAverages } from "@/lib/ratings";
 import { RatingCell } from "@/components/rating-cell";
 import { PackageRowActions } from "./package-actions";
 
-export default async function PackagesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
-  const { page: pageParam } = await searchParams;
+export default async function PackagesPage({ searchParams }: { searchParams: Promise<{ page?: string; size?: string }> }) {
+  const { page: pageParam, size: sizeParam } = await searchParams;
   const [features, allPackages] = await Promise.all([getFeatureOptions(), getPackageOptions()]);
-  const { page, pageCount, skip, take } = readPage(pageParam, allPackages.length);
+  const { page, pageCount, skip, take, size } = readPage(pageParam, allPackages.length, sizeParam);
   const packages = allPackages.slice(skip, skip + take);
   const ratings = (await loadRatingAverages()).packages;
   const priceByKey = new Map(features.map((feature) => [feature.key, feature.price]));
@@ -63,7 +63,7 @@ export default async function PackagesPage({ searchParams }: { searchParams: Pro
           </tbody>
         </table>
       </div>
-      <Pagination page={page} pageCount={pageCount} basePath="/packages" />
+      <Pagination page={page} pageCount={pageCount} basePath="/packages" size={size} total={allPackages.length} />
     </>
   );
 }

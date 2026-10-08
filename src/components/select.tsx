@@ -10,7 +10,7 @@ export type SelectOption = { value: string; label: string };
  * the end edge with proper padding, and the menu is a rounded list. Keyboard: arrows move, Enter or
  * Space picks, Escape closes. With `name` it also submits its value inside a form.
  */
-export function Select({ value, onChange, options, label, name, id, className = "" }: {
+export function Select({ value, onChange, options, label, name, id, className = "", compact = false, menuAbove = false }: {
   value: string;
   onChange: (value: string) => void;
   options: SelectOption[];
@@ -19,6 +19,10 @@ export function Select({ value, onChange, options, label, name, id, className = 
   name?: string;
   id?: string;
   className?: string;
+  /** A shorter control for tight places such as a table footer. */
+  compact?: boolean;
+  /** Opens the list upwards, for a control at the bottom of the page. */
+  menuAbove?: boolean;
 }) {
   const generated = useId();
   const listId = `${generated}-list`;
@@ -70,13 +74,13 @@ export function Select({ value, onChange, options, label, name, id, className = 
         aria-controls={listId}
         onClick={() => (open ? setOpen(false) : openMenu())}
         onKeyDown={onKeyDown}
-        className="input flex h-11 items-center justify-between gap-3 text-start"
+        className={`input flex items-center justify-between gap-3 text-start ${compact ? "!h-9 !py-0 text-sm" : "h-11"}`}
       >
         <span className="truncate">{options[selectedIndex]?.label}</span>
         <ChevronDown size={16} aria-hidden className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <ul id={listId} role="listbox" aria-label={label} className="absolute inset-x-0 top-full z-20 mt-1.5 m-0 list-none rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+        <ul id={listId} role="listbox" aria-label={label} className={`absolute inset-x-0 z-20 m-0 list-none rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg ${menuAbove ? "bottom-full mb-1.5" : "top-full mt-1.5"}`}>
           {options.map((option, index) => (
             <li
               key={option.value}

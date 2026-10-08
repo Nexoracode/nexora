@@ -9,10 +9,11 @@ import { DEFAULT_SUBSCRIPTION_SETTINGS, periodLabels, periodPrice, type Subscrip
 const periods: SubscriptionPeriod[] = ["MONTHLY", "QUARTERLY", "YEARLY"];
 
 /** Plan prices per period, worked out from each package's monthly price and the discounts in the subscription settings. */
-export default async function PlansPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
-  const { page: pageParam } = await searchParams;
+export default async function PlansPage({ searchParams }: { searchParams: Promise<{ page?: string; size?: string }> }) {
+  const { page: pageParam, size: sizeParam } = await searchParams;
   const where = { monthlyPrice: { not: null } };
-  const { page, pageCount, skip, take } = readPage(pageParam, await db.package.count({ where }));
+  const total = await db.package.count({ where });
+  const { page, pageCount, skip, take, size } = readPage(pageParam, total, sizeParam);
   const [stored, packages] = await Promise.all([
     db.subscriptionSettings.findUnique({ where: { id: "main" } }),
     db.package.findMany({ where, skip, take, orderBy: { monthlyPrice: "asc" }, select: { id: true, name: true, monthlyPrice: true } }),
@@ -52,7 +53,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           </tbody>
         </table>
       </div>
-      <Pagination page={page} pageCount={pageCount} basePath="/plans" />
+      <Pagination page={page} pageCount={pageCount} basePath="/plans" size={size} total={total} />
     </>
   );
 }
