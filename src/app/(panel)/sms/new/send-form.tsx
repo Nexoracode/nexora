@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { sendSmsAction } from "@/app/settings-actions";
 import { useResultToast } from "@/components/use-result-toast";
 import { Field, SubmitButton } from "@/components/ui";
@@ -12,19 +13,16 @@ export type SmsSite = { id: string; label: string; hasPhone: boolean };
 export function SendForm({ sites, disabled }: { sites: SmsSite[]; disabled: boolean }) {
   const [state, action] = useActionState(sendSmsAction, {});
   const [length, setLength] = useState(0);
-  const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
   useResultToast(state, "پیامک ارسال شد.");
   useEffect(() => {
-    if (state.saved) {
-      formRef.current?.reset();
-      setLength(0);
-    }
-  }, [state]);
+    if (state.saved) router.push("/sms");
+  }, [state, router]);
   const errors = state.fieldErrors ?? {};
   const a11y = (name: string) => ({ "aria-invalid": errors[name] ? true : undefined, "aria-describedby": `${name}-msg` }) as const;
 
   return (
-    <form ref={formRef} action={action} className="card max-w-4xl space-y-2">
+    <form action={action} className="card max-w-4xl space-y-2">
       <fieldset className="m-0 min-w-0 border-0 p-0">
         <legend className="mb-1.5 p-0 text-sm font-medium">گیرنده‌ها</legend>
         <div className="max-h-48 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200">

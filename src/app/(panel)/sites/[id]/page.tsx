@@ -9,8 +9,9 @@ import { formatDateTime } from "@/lib/format";
 import { SiteDangerZone } from "./danger-zone";
 import { WalletPanel } from "./wallet-panel";
 
-export default async function SitePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SitePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const { id } = await params;
+  const { tab } = await searchParams;
   const site = await db.site.findUnique({
     where: { id },
     include: { client: true, features: { select: { featureKey: true } }, events: { orderBy: { createdAt: "desc" }, take: 20 } },
@@ -40,6 +41,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
           notes: site.notes ?? "",
           featureKeys: site.features.map((f) => f.featureKey),
         }}
+        initialTab={tab === "wallet" ? "wallet" : "info"}
         extraTabs={[{ id: "wallet", label: "کیف پول", content: <WalletPanel siteId={site.id} /> }]}
         infoTop={<SiteDangerZone siteId={site.id} keyPrefix={site.keyPrefix} />}
         infoAside={

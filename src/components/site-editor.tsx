@@ -33,13 +33,15 @@ const LIMITS = { supportFreeMonths: 2, domain: 191, clientName: 120, clientPhone
 
 export type ExtraTab = { id: string; label: string; badge?: number; content: ReactNode };
 
-export function SiteEditor({ action, features, packages, site = emptySite, clientNames, mode, extraTabs = [], infoTop, infoAside }: {
+export function SiteEditor({ action, features, packages, site = emptySite, clientNames, mode, extraTabs = [], infoTop, infoAside, initialTab = "info" }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   features: FeatureOption[];
   packages: PackageOption[];
   site?: SiteDefaults;
   clientNames: string[];
   mode: "create" | "edit";
+  /** The tab shown first (a link can open the wallet tab directly). */
+  initialTab?: string;
   /** Tabs outside the form (history); shown after the editable ones. */
   extraTabs?: ExtraTab[];
   /** Content above the form on the info tab; it holds its own forms, so it cannot live inside this one. */
@@ -58,7 +60,7 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
   // How things were before the first package was applied, so one click can bring them back.
   const [beforePackage, setBeforePackage] = useState<{ selected: Set<string>; price: string } | null>(null);
   const [applied, setApplied] = useState<AppliedPackage | null>(null);
-  const [tab, setTab] = useState("info");
+  const [tab, setTab] = useState(initialTab);
   const errors = state.fieldErrors ?? {};
 
   // Every validated field lives on the first tab, so a failed save must bring it back into view.

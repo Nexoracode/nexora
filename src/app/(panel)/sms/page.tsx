@@ -4,7 +4,6 @@ import { Pagination } from "@/components/pagination";
 import { db } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { readPage } from "@/lib/paging";
-import { SendForm } from "./send-form";
 
 type SearchParams = Promise<{ page?: string; size?: string }>;
 
@@ -12,24 +11,11 @@ export default async function SmsPage({ searchParams }: { searchParams: SearchPa
   const { page: pageParam, size: sizeParam } = await searchParams;
   const total = await db.smsLog.count();
   const { page, pageCount, skip, take, size } = readPage(pageParam, total, sizeParam);
-  const [settings, sites, logs] = await Promise.all([
-    db.smsSettings.findUnique({ where: { id: "main" }, select: { isActive: true, lineNumber: true } }),
-    db.site.findMany({ orderBy: { createdAt: "desc" }, select: { id: true, domain: true, client: { select: { name: true, phone: true } } } }),
-    db.smsLog.findMany({ orderBy: { createdAt: "desc" }, skip, take }),
-  ]);
-  const ready = Boolean(settings?.isActive && settings.lineNumber);
+  const logs = await db.smsLog.findMany({ orderBy: { createdAt: "desc" }, skip, take });
 
   return (
     <>
-      <PageHeader title="ارسال پیامک" />
-      {!ready && (
-        <p className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          پیامک فعال نیست. ابتدا <Link href="/settings" className="font-bold underline">در تنظیمات</Link> کلید فراز اس‌ام‌اس و شمارهٔ خط را وارد و فعال کنید.
-        </p>
-      )}
-      <SendForm sites={sites.map((site) => ({ id: site.id, label: `${site.client.name} · ${site.domain}`, hasPhone: Boolean(site.client.phone) }))} disabled={!ready} />
-
-      <h2 className="mb-3 mt-8 text-base font-bold">سابقه</h2>
+      <PageHeader title="ارسال پیامک" action={<Link href="/sms/new" className="btn btn-primary">پیامک جدید</Link>} />
       <div className="card overflow-x-auto !p-0">
         <table className="w-full min-w-[40rem] text-sm">
           <thead className="bg-slate-50 text-slate-500">

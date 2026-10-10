@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { type FormState } from "@/app/actions";
 import { adjustWalletAction } from "@/app/support-actions";
 import { PriceInput } from "@/components/price-input";
@@ -11,20 +12,20 @@ import { useResultToast } from "@/components/use-result-toast";
 // Limits mirror adjustSchema in src/app/support-actions.ts.
 const LIMITS = { amountDigits: 9, description: 191 } as const;
 
-/** A manual raise or cut of the wallet, always with its reason. */
+/** A manual raise or cut of the wallet, always with its reason; it returns to the wallet tab when saved. */
 export function AdjustForm({ siteId }: { siteId: string }) {
   const [state, action] = useActionState<FormState, FormData>(adjustWalletAction.bind(null, siteId), {});
   const [direction, setDirection] = useState("credit");
-  const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
   useResultToast(state, "موجودی کیف پول تغییر کرد.");
   useEffect(() => {
-    if (state.saved) formRef.current?.reset();
-  }, [state]);
+    if (state.saved) router.push(`/sites/${siteId}?tab=wallet`);
+  }, [state, router, siteId]);
   const errors = state.fieldErrors ?? {};
   const a11y = (name: string) => ({ "aria-invalid": errors[name] ? true : undefined, "aria-describedby": `${name}-msg` }) as const;
 
   return (
-    <form ref={formRef} action={action} className="card grid max-w-4xl gap-x-4 sm:grid-cols-3">
+    <form action={action} className="card grid max-w-4xl gap-x-4 sm:grid-cols-3">
       <Field label="تغییر" htmlFor="direction">
         <Select id="direction" name="direction" label="تغییر" value={direction} onChange={setDirection} options={[{ value: "credit", label: "افزایش موجودی" }, { value: "debit", label: "کاهش موجودی" }]} />
       </Field>
