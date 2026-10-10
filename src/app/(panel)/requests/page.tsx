@@ -7,7 +7,6 @@ import { readPage } from "@/lib/paging";
 import { statusClass, statusLabel } from "@/lib/purchase-status";
 import { requestAmount, requestSubject } from "@/lib/request-labels";
 import { RequestsTable, type RequestRow } from "./requests-table";
-import { DEFAULT_SUBSCRIPTION_SETTINGS } from "@/lib/subscription";
 
 const filters = [
   { value: "", label: "همه" },
@@ -21,7 +20,6 @@ type SearchParams = Promise<{ status?: string; method?: string; q?: string; page
 export default async function RequestsPage({ searchParams }: { searchParams: SearchParams }) {
   const { status = "", method = "", q = "", page: pageParam, size: sizeParam } = await searchParams;
   const active = filters.find((filter) => filter.value === status)?.value ?? "";
-  const settings = (await db.subscriptionSettings.findUnique({ where: { id: "main" } })) ?? DEFAULT_SUBSCRIPTION_SETTINGS;
   const methodFilter: "ONLINE" | "CARD_TO_CARD" | undefined = method === "ONLINE" ? "ONLINE" : method === "CARD_TO_CARD" ? "CARD_TO_CARD" : undefined;
   const query = q.trim().slice(0, 100);
   const where = {
@@ -36,12 +34,12 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     skip,
     take,
-    include: { feature: { select: { title: true, price: true } }, package: { select: { name: true, price: true, monthlyPrice: true } }, site: { select: { domain: true, client: { select: { name: true, phone: true } } } } },
+    include: { feature: { select: { title: true, price: true } }, package: { select: { name: true, price: true } }, site: { select: { domain: true, client: { select: { name: true, phone: true } } } } },
   });
 
   const rows: RequestRow[] = requests.map((request) => {
     const subject = requestSubject(request);
-    const amount = formatToman(requestAmount(request, settings));
+    const amount = formatToman(requestAmount(request));
     const method = request.method === "ONLINE" ? "پرداخت آنلاین" : "کارت‌به‌کارت";
     return {
       id: request.id,

@@ -23,13 +23,11 @@ export type SiteDefaults = {
   status: "ACTIVE" | "SUSPENDED";
   contractPrice: number;
   expiresAt: string;
-  planId: string;
-  period: "" | "MONTHLY" | "QUARTERLY" | "YEARLY";
   notes: string;
   featureKeys: string[];
 };
 
-const emptySite: SiteDefaults = { domain: "", clientName: "", clientPhone: "", status: "ACTIVE", contractPrice: 0, expiresAt: "", planId: "", period: "", notes: "", featureKeys: [] };
+const emptySite: SiteDefaults = { domain: "", clientName: "", clientPhone: "", status: "ACTIVE", contractPrice: 0, expiresAt: "", notes: "", featureKeys: [] };
 
 // Limits mirror siteSchema in src/app/actions.ts and the Site columns in prisma/schema.prisma.
 const LIMITS = { domain: 191, clientName: 120, clientPhone: 20, notes: 1000 } as const;
@@ -57,9 +55,6 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
   // The saved selection: the card measures what was added or removed against it.
   const baseline = useMemo(() => new Set(site.featureKeys), [site.featureKeys]);
   const [status, setStatus] = useState<SiteDefaults["status"]>(site.status);
-  const [planId, setPlanId] = useState(site.planId);
-  const [period, setPeriod] = useState<string>(site.period);
-  const plans = packages.filter((pkg) => pkg.monthlyPrice !== null);
   const [price, setPrice] = useState(String(site.contractPrice || ""));
   // How things were before the first package was applied, so one click can bring them back.
   const [beforePackage, setBeforePackage] = useState<{ selected: Set<string>; price: string } | null>(null);
@@ -127,12 +122,6 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
             </Field>
             <Field label="تاریخ انقضا" htmlFor="expiresAt" hint="خالی یعنی بدون انقضا">
               <JalaliDateField id="expiresAt" name="expiresAt" defaultValue={site.expiresAt} aria-describedby="expiresAt-msg" />
-            </Field>
-            <Field label="پلن اشتراک" htmlFor="planId" error={errors.planId} hint="خالی یعنی سایت پلن اشتراک ندارد">
-              <Select id="planId" name="planId" label="پلن اشتراک" value={planId} onChange={setPlanId} options={[{ value: "", label: "بدون پلن" }, ...plans.map((plan) => ({ value: plan.id, label: plan.name }))]} />
-            </Field>
-            <Field label="دوره‌ی اشتراک" htmlFor="period" error={errors.period}>
-              <Select id="period" name="period" label="دوره‌ی اشتراک" value={period} onChange={setPeriod} options={[{ value: "", label: "بدون دوره" }, { value: "MONTHLY", label: "ماهانه" }, { value: "QUARTERLY", label: "سه‌ماهه" }, { value: "YEARLY", label: "سالانه" }]} />
             </Field>
             <div className="sm:col-span-2">
               <Field label="یادداشت" htmlFor="notes" error={errors.notes} hint={`حداکثر ${LIMITS.notes} نویسه`}>

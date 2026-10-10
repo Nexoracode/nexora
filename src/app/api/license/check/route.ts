@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { getOnlinePaymentConfig } from "@/lib/payment-config";
 import { contractEndsAt, normalizeDomain, signLicenseToken } from "@/lib/license-token";
-import { DEFAULT_SUBSCRIPTION_SETTINGS, periodPrice } from "@/lib/subscription";
 import { loadRatings } from "@/lib/ratings";
 import { authenticateSite } from "@/lib/site-auth";
 
@@ -21,13 +20,7 @@ export async function POST(request: Request) {
   const { site } = auth;
 
   // An expired contract is served exactly like a suspension so the site locks its optional features.
-  const subscriptionSettings = (await db.subscriptionSettings.findUnique({ where: { id: "main" } })) ?? DEFAULT_SUBSCRIPTION_SETTINGS;
-  const endsAt = site.expiresAt ? contractEndsAt(site.expiresAt) : null;
-  const graceEndsAt = endsAt ? new Date(endsAt.getTime() + subscriptionSettings.graceDays * 86_400_000) : null;
-  const now = Date.now();
-  // After the end date the site keeps working through the grace days (features stay on), then is served as suspended.
-  const subscriptionState = !endsAt ? "NONE" : now <= endsAt.getTime() ? "ACTIVE" : now <= graceEndsAt!.getTime() ? "GRACE" : "EXPIRED";
-  const expired = subscriptionState === "EXPIRED";
+  const expired = site.expiresAt !== null && contractEndsAt(site.expiresAt).getTime() <= Date.now();
   const status = site.status === "ACTIVE" && !expired ? "ACTIVE" : "SUSPENDED";
   const iat = Math.floor(Date.now() / 1000);
   const token = signLicenseToken(
@@ -39,7 +32,7 @@ export async function POST(request: Request) {
     db.feature.findMany({ orderBy: { sortOrder: "asc" }, select: { key: true, title: true, description: true, group: true, price: true, isActive: true } }),
     db.ownerSettings.findUnique({ where: { id: "main" }, select: { holderName: true, cardNumber: true, sheba: true, bankName: true, contactPhone: true, note: true } }),
     db.purchaseRequest.findMany({ where: { siteId: site.id, status: "PENDING" }, select: { featureKey: true, packageId: true } }),
-    db.package.findMany({ orderBy: { price: "asc" }, select: { id: true, name: true, price: true, monthlyPrice: true, features: { select: { featureKey: true } } } }),
+    db.package.findMany({ orderBy: { price: "asc" }, select: { id: true, name: true, price: true, features: { select: { featureKey: true } } } }),
     db.purchaseRequest.findMany({
       where: { siteId: site.id, status: "REJECTED", rejectReason: { not: null }, resolvedAt: { gte: new Date(Date.now() - REJECTION_DAYS * 86_400_000) } },
       orderBy: { resolvedAt: "desc" },
@@ -50,7 +43,7 @@ export async function POST(request: Request) {
       where: { siteId: site.id, status: "APPROVED", method: "CARD_TO_CARD", resolvedAt: { gte: new Date(Date.now() - REJECTION_DAYS * 86_400_000) } },
       orderBy: { resolvedAt: "desc" },
       take: 20,
-      select: { id: true, featureKey: true, packageId: true, period: true, resolvedAt: true },
+      select: { id: true, featureKey: true, packageId: true, resolvedAt: true },
     }),
     loadRatings(site.id),
   ]);
@@ -80,32 +73,10 @@ export async function POST(request: Request) {
     pending: pending.flatMap((p) => (p.featureKey ? [p.featureKey] : [])),
     pendingPackages: pending.flatMap((p) => (p.packageId ? [p.packageId] : [])),
     rejected,
-    // Where the site's subscription stands, and the rules the site applies to it (reminders, what is locked after the grace days).
-    subscription: {
-      state: subscriptionState,
-      planId: site.planId,
-      period: site.period,
-      endsAt: endsAt?.toISOString() ?? null,
-      graceEndsAt: graceEndsAt?.toISOString() ?? null,
-      lockAfterGrace: subscriptionSettings.lockAfterGrace,
-      reminderDays: subscriptionSettings.reminderDays.split(",").map(Number).filter((day) => Number.isInteger(day) && day > 0),
-      retentionDays: subscriptionSettings.retentionDays,
-    },
     // Star summaries of every feature and package, and what this site itself gave.
     ratings: ratingData.ratings,
     myRatings: ratingData.myRatings,
-    approved: approvedRows.map((row) => ({ id: row.id, featureKey: row.featureKey, packageId: row.packageId, period: row.period, at: row.resolvedAt?.toISOString() ?? null })),
-    packages: packages.map((p) => ({
-      id: p.id,
-      name: p.name,
-      price: Number(p.price),
-      featureKeys: p.features.map((f) => f.featureKey),
-      // A package offered as a subscription plan carries its price for each period, already discounted.
-      periodPrices: p.monthlyPrice === null ? null : {
-        MONTHLY: periodPrice(Number(p.monthlyPrice), "MONTHLY", subscriptionSettings),
-        QUARTERLY: periodPrice(Number(p.monthlyPrice), "QUARTERLY", subscriptionSettings),
-        YEARLY: periodPrice(Number(p.monthlyPrice), "YEARLY", subscriptionSettings),
-      },
-    })),
+    approved: approvedRows.map((row) => ({ id: row.id, featureKey: row.featureKey, packageId: row.packageId, at: row.resolvedAt?.toISOString() ?? null })),
+    packages: packages.map((p) => ({ id: p.id, name: p.name, price: Number(p.price), featureKeys: p.features.map((f) => f.featureKey) })),
   });
 }

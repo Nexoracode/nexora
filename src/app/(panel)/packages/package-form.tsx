@@ -31,9 +31,6 @@ export function PackageForm({ pkg, features }: { pkg: PackageOption | null; feat
         <Field label="قیمت بسته" htmlFor="price" error={errors.price}>
           <PriceInput id="price" name="price" defaultValue={pkg?.price || ""} {...a11y("price")} />
         </Field>
-        <Field label="قیمت ماهانه‌ی اشتراک" htmlFor="monthlyPrice" error={errors.monthlyPrice} hint="خالی یعنی به‌عنوان پلن اشتراک عرضه نمی‌شود">
-          <PriceInput id="monthlyPrice" name="monthlyPrice" defaultValue={pkg?.monthlyPrice || ""} {...a11y("monthlyPrice")} />
-        </Field>
       </section>
 
       {/* Same layout as the features tab of a site: the live selection card docks on the right. */}
