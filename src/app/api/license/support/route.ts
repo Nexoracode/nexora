@@ -6,6 +6,7 @@ import { normalizeDomain } from "@/lib/license-token";
 import { getOnlinePaymentConfig } from "@/lib/payment-config";
 import { tomanToRials } from "@/lib/pricing";
 import { debitWallet, supportLimits, ticketFee } from "@/lib/support";
+import { TICKET_CATEGORIES, TICKET_PRIORITIES } from "@/lib/support-limits";
 import { authenticateSite } from "@/lib/site-auth";
 import { requestPayment } from "@/lib/zarinpal";
 
@@ -15,7 +16,7 @@ const text = (max: number, label: string) => z.string().trim().min(1, `${label} 
 const bodySchema = z.discriminatedUnion("action", [
   z.object({ ...auth, action: z.literal("overview") }),
   z.object({ ...auth, action: z.literal("get"), ticketId: z.string().min(1).max(191) }),
-  z.object({ ...auth, action: z.literal("create"), subject: text(supportLimits.subject, "موضوع"), body: text(supportLimits.message, "متن پیام"), payWith: z.enum(["wallet", "online"]), returnUrl: z.url().max(500).optional() }),
+  z.object({ ...auth, action: z.literal("create"), subject: text(supportLimits.subject, "موضوع"), body: text(supportLimits.message, "متن پیام"), payWith: z.enum(["wallet", "online"]), category: z.enum(TICKET_CATEGORIES).default("OTHER"), priority: z.enum(TICKET_PRIORITIES).default("NORMAL"), returnUrl: z.url().max(500).optional() }),
   z.object({ ...auth, action: z.literal("reply"), ticketId: z.string().min(1).max(191), body: text(supportLimits.message, "متن پیام") }),
   z.object({ ...auth, action: z.literal("close"), ticketId: z.string().min(1).max(191) }),
   z.object({
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
       const [site, owner, tickets, entries, topups] = await Promise.all([
         db.site.findUniqueOrThrow({ where: { id: siteId }, select: { walletBalance: true, supportFreeUntil: true } }),
         db.ownerSettings.findUnique({ where: { id: "main" }, select: { ticketPrice: true, holderName: true, cardNumber: true, sheba: true, bankName: true, contactPhone: true, note: true } }),
-        db.supportTicket.findMany({ where: { siteId }, orderBy: { updatedAt: "desc" }, take: 100, select: { id: true, subject: true, status: true, charge: true, fee: true, createdAt: true, updatedAt: true } }),
+        db.supportTicket.findMany({ where: { siteId }, orderBy: { updatedAt: "desc" }, take: 100, select: { id: true, number: true, subject: true, status: true, category: true, priority: true, charge: true, fee: true, createdAt: true, updatedAt: true } }),
         db.walletEntry.findMany({ where: { siteId }, orderBy: { createdAt: "desc" }, take: 50, select: { id: true, amount: true, balanceAfter: true, type: true, description: true, createdAt: true } }),
         db.walletTopup.findMany({ where: { siteId, status: { in: ["PENDING", "REJECTED"] } }, orderBy: { createdAt: "desc" }, take: 20, select: { id: true, amount: true, status: true, rejectReason: true, createdAt: true } }),
       ]);
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
         walletBalance: Number(site.walletBalance),
         onlineEnabled: (await getOnlinePaymentConfig()) !== null,
         owner: owner ? { holderName: owner.holderName, cardNumber: owner.cardNumber, sheba: owner.sheba, bankName: owner.bankName, contactPhone: owner.contactPhone, note: owner.note } : null,
-        tickets: tickets.map((t) => ({ id: t.id, subject: t.subject, status: t.status, charge: t.charge, fee: Number(t.fee), createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() })),
+        tickets: tickets.map((t) => ({ id: t.id, number: t.number, subject: t.subject, status: t.status, category: t.category, priority: t.priority, charge: t.charge, fee: Number(t.fee), createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() })),
         entries: entries.map((e) => ({ id: e.id, amount: Number(e.amount), balanceAfter: Number(e.balanceAfter), type: e.type, description: e.description, createdAt: e.createdAt.toISOString() })),
         topups: topups.map((t) => ({ id: t.id, amount: Number(t.amount), status: t.status, rejectReason: t.rejectReason, createdAt: t.createdAt.toISOString() })),
       });
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
       if (!ticket) return fail(404, "تیکت پیدا نشد.");
       const messages = await db.supportMessage.findMany({ where: { ticketId: ticket.id }, orderBy: { createdAt: "asc" }, select: { id: true, fromOwner: true, body: true, createdAt: true } });
       return NextResponse.json({
-        ticket: { id: ticket.id, subject: ticket.subject, status: ticket.status, charge: ticket.charge, fee: Number(ticket.fee), createdAt: ticket.createdAt.toISOString(), closedAt: ticket.closedAt?.toISOString() ?? null },
+        ticket: { id: ticket.id, number: ticket.number, subject: ticket.subject, status: ticket.status, category: ticket.category, priority: ticket.priority, charge: ticket.charge, fee: Number(ticket.fee), createdAt: ticket.createdAt.toISOString(), closedAt: ticket.closedAt?.toISOString() ?? null },
         messages: messages.map((m) => ({ id: m.id, fromOwner: m.fromOwner, body: m.body, createdAt: m.createdAt.toISOString() })),
       });
     }
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
         db.ownerSettings.findUnique({ where: { id: "main" }, select: { ticketPrice: true } }),
       ]);
       const fee = ticketFee({ freeUntil: site.supportFreeUntil, ticketPrice: Number(owner?.ticketPrice ?? 0) });
-      const data = { siteId, subject: input.subject, fee, messages: { create: { body: input.body } } };
+      const data = { siteId, subject: input.subject, category: input.category, priority: input.priority, fee, messages: { create: { body: input.body } } };
 
       if (fee === 0) {
         const ticket = await db.supportTicket.create({ data: { ...data, charge: "FREE", status: "OPEN" }, select: { id: true } });

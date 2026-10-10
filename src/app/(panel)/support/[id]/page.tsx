@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { db } from "@/lib/db";
 import { formatDateTime, formatToman } from "@/lib/format";
-import { chargeLabel, ticketStatusClass, ticketStatusLabel } from "@/lib/support-labels";
+import { categoryLabel, chargeLabel, priorityClass, priorityLabel, ticketStatusClass, ticketStatusLabel } from "@/lib/support-labels";
 import { ReplyForm } from "./reply-form";
 
 export default async function TicketPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,9 +20,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
       <div>
         <Link href="/support" className="mb-3 inline-block text-sm text-brand">← بازگشت به تیکت‌ها</Link>
         <PageHeader
-          title={ticket.subject}
-          description={`${ticket.site.client.name} · ${ticket.site.domain} · ${cost}`}
-          action={<span className={`rounded-full px-3 py-1 text-xs font-medium ${ticketStatusClass[ticket.status]}`}>{ticketStatusLabel[ticket.status]}</span>}
+          title={`#${ticket.number} · ${ticket.subject}`}
+          description={`${ticket.site.client.name} · ${ticket.site.domain} · ${categoryLabel[ticket.category]} · ${cost}`}
+          action={<span className="flex items-center gap-2"><span className={`rounded-full px-3 py-1 text-xs font-medium ${priorityClass[ticket.priority]}`}>اولویت {priorityLabel[ticket.priority]}</span><span className={`rounded-full px-3 py-1 text-xs font-medium ${ticketStatusClass[ticket.status]}`}>{ticketStatusLabel[ticket.status]}</span></span>}
         />
       </div>
 

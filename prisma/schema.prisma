@@ -43,6 +43,21 @@ enum TicketStatus {
   CLOSED
 }
 
+enum TicketCategory {
+  TECHNICAL
+  BILLING
+  LICENSE
+  FEATURE_REQUEST
+  OTHER
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
 // How a support ticket was paid for.
 enum TicketCharge {
   FREE
@@ -232,6 +247,10 @@ model Rating {
 
 model SupportTicket {
   id        String       @id @default(cuid())
+  // The number people quote ("ticket 1042"); the id stays the key.
+  number    Int          @unique @default(autoincrement())
+  category  TicketCategory @default(OTHER)
+  priority  TicketPriority @default(NORMAL)
   siteId    String
   subject   String       @db.VarChar(191)
   status    TicketStatus @default(OPEN)
@@ -251,6 +270,7 @@ model SupportTicket {
 
   @@index([siteId, createdAt])
   @@index([status, updatedAt])
+  @@index([priority, status])
 }
 
 model SupportMessage {
