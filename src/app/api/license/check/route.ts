@@ -68,6 +68,8 @@ export async function POST(request: Request) {
     owner,
     // The merchant id never leaves the panel; sites only learn whether paying online is possible.
     onlineEnabled: (await getOnlinePaymentConfig()) !== null,
+    // What the site can spend on features and packages without a gateway.
+    walletBalance: Number((await db.site.findUniqueOrThrow({ where: { id: site.id }, select: { walletBalance: true } })).walletBalance),
     pending: pending.flatMap((p) => (p.featureKey ? [p.featureKey] : [])),
     pendingPackages: pending.flatMap((p) => (p.packageId ? [p.packageId] : [])),
     rejected,

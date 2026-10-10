@@ -40,14 +40,14 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
   const rows: RequestRow[] = requests.map((request) => {
     const subject = requestSubject(request);
     const amount = formatToman(requestAmount(request));
-    const method = request.method === "ONLINE" ? "پرداخت آنلاین" : "کارت‌به‌کارت";
+    const method = request.method === "ONLINE" ? "پرداخت آنلاین" : request.method === "WALLET" ? "کیف پول" : "کارت‌به‌کارت";
     return {
       id: request.id,
       subject,
       shopName: request.site.client.name,
       domain: request.site.domain,
       amount,
-      method: request.method === "ONLINE" ? "آنلاین" : "کارت‌به‌کارت",
+      method: request.method === "ONLINE" ? "آنلاین" : request.method === "WALLET" ? "کیف پول" : "کارت‌به‌کارت",
       status: request.status,
       statusLabel: statusLabel[request.status],
       statusClass: statusClass[request.status],
@@ -56,7 +56,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
         { label: request.feature ? "قابلیت" : "بسته", value: subject },
         { label: "مبلغ", value: amount },
         { label: "روش پرداخت", value: method },
-        { label: request.method === "ONLINE" ? "شناسه مرجع" : "کد پیگیری", value: request.trackingCode, ltr: true },
+        { label: request.method === "CARD_TO_CARD" ? "کد پیگیری" : "شناسه مرجع", value: request.trackingCode, ltr: true },
         ...(request.refId ? [{ label: "شماره مرجع درگاه", value: request.refId, ltr: true }] : []),
         { label: "نام سایت", value: request.site.client.name },
         { label: "دامنه", value: request.site.domain, ltr: true },

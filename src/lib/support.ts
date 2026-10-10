@@ -25,7 +25,7 @@ export async function creditWallet(tx: Tx, input: { siteId: string; amount: numb
 }
 
 /** Takes `amount` from a site's wallet only if the balance covers it; false when it does not. */
-export async function debitWallet(tx: Tx, input: { siteId: string; amount: number; type: "TICKET_FEE" | "ADMIN_DEBIT"; description: string; ticketId?: string }) {
+export async function debitWallet(tx: Tx, input: { siteId: string; amount: number; type: "TICKET_FEE" | "ADMIN_DEBIT" | "PURCHASE"; description: string; ticketId?: string }) {
   const taken = await tx.site.updateMany({ where: { id: input.siteId, walletBalance: { gte: input.amount } }, data: { walletBalance: { decrement: input.amount } } });
   if (taken.count === 0) return false;
   const site = await tx.site.findUniqueOrThrow({ where: { id: input.siteId }, select: { walletBalance: true } });

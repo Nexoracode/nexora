@@ -23,6 +23,7 @@ enum PurchaseStatus {
 enum PurchaseMethod {
   CARD_TO_CARD
   ONLINE
+  WALLET
 }
 
 enum LicenseEventType {
@@ -54,6 +55,7 @@ enum WalletEntryType {
   TICKET_FEE
   ADMIN_CREDIT
   ADMIN_DEBIT
+  PURCHASE
 }
 
 enum TopupStatus {

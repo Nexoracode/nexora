@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE `PurchaseRequest` MODIFY `method` ENUM('CARD_TO_CARD', 'ONLINE', 'WALLET') NOT NULL DEFAULT 'CARD_TO_CARD';
+
+-- AlterTable
+ALTER TABLE `WalletTopup` MODIFY `method` ENUM('CARD_TO_CARD', 'ONLINE', 'WALLET') NOT NULL;
+
+-- AlterTable
+ALTER TABLE `WalletEntry` MODIFY `type` ENUM('TOPUP', 'TICKET_FEE', 'ADMIN_CREDIT', 'ADMIN_DEBIT', 'PURCHASE') NOT NULL;
