@@ -11,7 +11,7 @@ export async function WalletPanel({ siteId }: { siteId: string }) {
   });
   return (
     <div className="space-y-5">
-      <section className="card max-w-4xl">
+      <section className="card">
         <p className="m-0 text-sm text-slate-500">موجودی</p>
         <p className="m-0 mt-1 text-xl font-bold">{formatToman(Number(site.walletBalance))}</p>
         <Link href={`/sites/${siteId}/wallet/adjust`} className="btn btn-ghost mt-3">تغییر دستی موجودی</Link>

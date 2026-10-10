@@ -25,7 +25,7 @@ export function AdjustForm({ siteId }: { siteId: string }) {
   const a11y = (name: string) => ({ "aria-invalid": errors[name] ? true : undefined, "aria-describedby": `${name}-msg` }) as const;
 
   return (
-    <form action={action} className="card grid max-w-4xl gap-x-4 sm:grid-cols-3">
+    <form action={action} className="card grid gap-x-4 sm:grid-cols-3">
       <Field label="تغییر" htmlFor="direction">
         <Select id="direction" name="direction" label="تغییر" value={direction} onChange={setDirection} options={[{ value: "credit", label: "افزایش موجودی" }, { value: "debit", label: "کاهش موجودی" }]} />
       </Field>

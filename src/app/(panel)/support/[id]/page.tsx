@@ -26,7 +26,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
         />
       </div>
 
-      <ul className="m-0 grid max-w-3xl list-none gap-3 p-0">
+      <ul className="m-0 grid list-none gap-3 p-0">
         {ticket.messages.map((message) => (
           <li key={message.id} className={`card !p-4 ${message.fromOwner ? "bg-green-50" : ""}`}>
             <p className="m-0 mb-1 text-xs text-slate-500">{message.fromOwner ? "پشتیبانی" : "ادمین سایت"} · {formatDateTime(message.createdAt)}</p>
@@ -35,7 +35,7 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
         ))}
       </ul>
 
-      {(ticket.status === "OPEN" || ticket.status === "ANSWERED") && <div className="max-w-3xl"><ReplyForm ticketId={ticket.id} /></div>}
+      {(ticket.status === "OPEN" || ticket.status === "ANSWERED") && <div><ReplyForm ticketId={ticket.id} /></div>}
     </div>
   );
 }
