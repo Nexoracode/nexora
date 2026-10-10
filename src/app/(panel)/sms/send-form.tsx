@@ -8,7 +8,7 @@ import { smsLimits } from "@/lib/sms-limits";
 
 export type SmsSite = { id: string; label: string; hasPhone: boolean };
 
-/** One message to the chosen clients (their phone from the site\'s client) and to any extra numbers typed in. */
+/** One message to the chosen clients (their phone from the site's client) and to any extra numbers typed in. */
 export function SendForm({ sites, disabled }: { sites: SmsSite[]; disabled: boolean }) {
   const [state, action] = useActionState(sendSmsAction, {});
   const [length, setLength] = useState(0);
