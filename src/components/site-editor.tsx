@@ -5,7 +5,6 @@ import { useActionState, useEffect, useMemo, useState, type ReactNode } from "re
 import type { FormState } from "@/app/actions";
 import { formatToman, normalizeDigits } from "@/lib/format";
 import { FeatureGrid, PackagePicker, SelectionSummary, type AppliedPackage, type FeatureOption, type PackageOption } from "./feature-grid";
-import { JalaliDateField } from "./jalali-date-field";
 import { Select } from "./select";
 import { SuggestInput } from "./suggest-input";
 import { PriceInput } from "./price-input";
@@ -22,12 +21,11 @@ export type SiteDefaults = {
   clientPhone: string;
   status: "ACTIVE" | "SUSPENDED";
   contractPrice: number;
-  expiresAt: string;
   notes: string;
   featureKeys: string[];
 };
 
-const emptySite: SiteDefaults = { domain: "", clientName: "", clientPhone: "", status: "ACTIVE", contractPrice: 0, expiresAt: "", notes: "", featureKeys: [] };
+const emptySite: SiteDefaults = { domain: "", clientName: "", clientPhone: "", status: "ACTIVE", contractPrice: 0, notes: "", featureKeys: [] };
 
 // Limits mirror siteSchema in src/app/actions.ts and the Site columns in prisma/schema.prisma.
 const LIMITS = { domain: 191, clientName: 120, clientPhone: 20, notes: 1000 } as const;
@@ -119,9 +117,6 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
             </Field>
             <Field label="مبلغ قرارداد (تومان)" htmlFor="contractPrice" error={errors.contractPrice}>
               <PriceInput id="contractPrice" name="contractPrice" value={price} onValueChange={setPrice} {...invalid("contractPrice")} />
-            </Field>
-            <Field label="تاریخ انقضا" htmlFor="expiresAt" hint="خالی یعنی بدون انقضا">
-              <JalaliDateField id="expiresAt" name="expiresAt" defaultValue={site.expiresAt} aria-describedby="expiresAt-msg" />
             </Field>
             <div className="sm:col-span-2">
               <Field label="یادداشت" htmlFor="notes" error={errors.notes} hint={`حداکثر ${LIMITS.notes} نویسه`}>

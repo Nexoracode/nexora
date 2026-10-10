@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { ColumnFilter } from "@/components/column-filter";
 import { Pagination } from "@/components/pagination";
 import { db } from "@/lib/db";
-import { formatDate, formatDateTime, formatToman } from "@/lib/format";
+import { formatDateTime, formatToman } from "@/lib/format";
 import { readPage } from "@/lib/paging";
 
 type SearchParams = Promise<{ q?: string; status?: string; page?: string; size?: string }>;
@@ -26,7 +26,7 @@ export default async function SitesPage({ searchParams }: { searchParams: Search
       take,
       orderBy: { createdAt: "desc" },
       select: {
-        id: true, domain: true, status: true, contractPrice: true, expiresAt: true, lastSeenAt: true,
+        id: true, domain: true, status: true, contractPrice: true, lastSeenAt: true,
         client: { select: { name: true } },
         _count: { select: { features: true } },
       },
@@ -68,13 +68,12 @@ export default async function SitesPage({ searchParams }: { searchParams: Search
               <th className="px-4 py-3 text-start font-medium"><span className="inline-flex items-center gap-1">وضعیت<ColumnFilter param="status" label="وضعیت" options={[{ value: "ACTIVE", label: "فعال" }, { value: "SUSPENDED", label: "تعلیق" }]} /></span></th>
               <th className="px-4 py-3 text-start font-medium">قابلیت‌ها</th>
               <th className="px-4 py-3 text-start font-medium">قرارداد</th>
-              <th className="px-4 py-3 text-start font-medium">انقضا</th>
               <th className="px-4 py-3 text-start font-medium">آخرین اتصال</th>
             </tr>
           </thead>
           <tbody>
             {sites.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-500">چیزی پیدا نشد.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-500">چیزی پیدا نشد.</td></tr>
             )}
             {sites.map((site) => (
               <tr key={site.id} className="relative border-t border-slate-100 hover:bg-slate-50">
@@ -88,7 +87,6 @@ export default async function SitesPage({ searchParams }: { searchParams: Search
                 </td>
                 <td className="px-4 py-3">{site._count.features.toLocaleString("fa-IR")} از {featureTotal.toLocaleString("fa-IR")}</td>
                 <td className="px-4 py-3">{formatToman(Number(site.contractPrice))}</td>
-                <td className="px-4 py-3 text-slate-500">{formatDate(site.expiresAt)}</td>
                 <td className="px-4 py-3 text-slate-500">{formatDateTime(site.lastSeenAt)}</td>
               </tr>
             ))}

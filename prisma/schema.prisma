@@ -91,7 +91,6 @@ model Site {
   keyPrefix     String     @db.VarChar(16)
   status        SiteStatus @default(ACTIVE)
   contractPrice Decimal    @default(0) @db.Decimal(14, 0)
-  expiresAt     DateTime?
   notes         String?    @db.VarChar(1000)
   lastSeenAt    DateTime?
   // Where the site accepts "refresh now" messages; learned from its check-ins and limited to the registered domain.

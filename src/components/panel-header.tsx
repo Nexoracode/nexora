@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, CalendarClock, WifiOff } from "lucide-react";
+import { Bell, WifiOff } from "lucide-react";
 import { QuickAddSite } from "@/components/quick-add-site";
 
 export type GatewayMode = "off" | "sandbox" | "live";
@@ -13,10 +13,9 @@ const gateway: Record<GatewayMode, { label: string; className: string }> = {
 const chip = "inline-flex flex-none items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium";
 
 /**
- * The desktop top bar. It carries only what no page shows by itself: the payment mode, contracts
- * about to end or already ended, sites that stopped checking in, pending purchases, and a quick add.
+ * The desktop top bar. It carries only what no page shows by itself: the payment mode, sites that stopped checking in, pending purchases, and a quick add.
  */
-export function PanelHeader({ pendingRequests, gatewayMode, endingContracts, silentSites }: { pendingRequests: number; gatewayMode: GatewayMode; endingContracts: number; silentSites: number }) {
+export function PanelHeader({ pendingRequests, gatewayMode, silentSites }: { pendingRequests: number; gatewayMode: GatewayMode; silentSites: number }) {
   const mode = gateway[gatewayMode];
   const count = (value: number) => value.toLocaleString("fa-IR");
 
@@ -24,9 +23,6 @@ export function PanelHeader({ pendingRequests, gatewayMode, endingContracts, sil
     <header className="sticky top-0 z-20 hidden h-14 items-center justify-between gap-4 border-b border-slate-200 bg-white px-8 lg:flex">
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <span className={`${chip} ${mode.className}`}>{mode.label}</span>
-        {endingContracts > 0 && (
-          <Link href="/" className={`${chip} bg-red-50 text-red-700`}><CalendarClock size={14} aria-hidden />{count(endingContracts)} قرارداد رو به پایان</Link>
-        )}
         {silentSites > 0 && (
           <Link href="/" className={`${chip} bg-slate-100 text-slate-700`}><WifiOff size={14} aria-hidden />{count(silentSites)} سایت بدون اتصال اخیر</Link>
         )}

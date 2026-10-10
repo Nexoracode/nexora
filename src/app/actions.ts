@@ -46,7 +46,6 @@ const siteSchema = z.object({
   clientPhone: z.string().trim().max(20, "شماره حداکثر ۲۰ نویسه است.").optional(),
   status: z.enum(["ACTIVE", "SUSPENDED"]),
   contractPrice: priceField,
-  expiresAt: z.string().optional(),
   notes: z.string().trim().max(1000, "یادداشت حداکثر ۱۰۰۰ نویسه است.").optional(),
 });
 
@@ -57,7 +56,6 @@ function readSiteForm(formData: FormData) {
     clientPhone: formData.get("clientPhone") || undefined,
     status: formData.get("status") ?? "ACTIVE",
     contractPrice: formData.get("contractPrice"),
-    expiresAt: formData.get("expiresAt") || undefined,
     notes: formData.get("notes") || undefined,
   });
   if (!parsed.success) {
@@ -97,7 +95,6 @@ export async function createSiteAction(_: FormState, formData: FormData): Promis
       keyPrefix: license.prefix,
       status: data.status,
       contractPrice: data.contractPrice,
-      expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
       notes: data.notes,
       features: { create: featureKeys.map((featureKey) => ({ featureKey })) },
       events: { create: { type: "SITE_CREATED", message: `سایت با ${featureKeys.length} قابلیت ثبت شد.` } },
@@ -138,7 +135,6 @@ export async function updateSiteAction(siteId: string, _: FormState, formData: F
       domain: data.domain,
       status: data.status,
       contractPrice: data.contractPrice,
-      expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
       notes: data.notes ?? null,
       features: { deleteMany: {}, create: featureKeys.map((featureKey) => ({ featureKey })) },
       events: { create: events },
