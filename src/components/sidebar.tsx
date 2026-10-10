@@ -33,7 +33,7 @@ const groups = [
   {
     title: "تنظیمات",
     links: [
-      { href: "/settings", label: "اطلاعات حساب", icon: Wallet },
+      { href: "/settings", label: "تنظیمات", icon: Wallet },
     ],
   },
 ] as const;

@@ -256,7 +256,6 @@ const ownerSchema = z.object({
   bankName: z.string().trim().max(60, "نام بانک حداکثر ۶۰ نویسه است."),
   contactPhone: z.string().regex(/^(09\d{9})?$/, "شماره تماس باید به‌صورت 09xxxxxxxxx و ۱۱ رقم باشد."),
   note: z.string().trim().max(500, "توضیح حداکثر ۵۰۰ نویسه است."),
-  ticketPrice: priceField,
 });
 
 export async function saveOwnerSettingsAction(_: FormState, formData: FormData): Promise<FormState> {
@@ -268,7 +267,6 @@ export async function saveOwnerSettingsAction(_: FormState, formData: FormData):
     bankName: formData.get("bankName") ?? "",
     contactPhone: digitsOnly(formData.get("contactPhone")),
     note: formData.get("note") ?? "",
-    ticketPrice: formData.get("ticketPrice"),
   });
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
@@ -279,6 +277,16 @@ export async function saveOwnerSettingsAction(_: FormState, formData: FormData):
   await db.ownerSettings.upsert({ where: { id: "main" }, create: { id: "main", ...data }, update: data });
   revalidatePath("/settings");
   after(() => notifySites());
+  return { saved: true };
+}
+
+/** What one support ticket costs once a site's free months are over. */
+export async function saveSupportSettingsAction(_: FormState, formData: FormData): Promise<FormState> {
+  await requireOwnerAction();
+  const parsed = z.object({ ticketPrice: priceField }).safeParse({ ticketPrice: formData.get("ticketPrice") });
+  if (!parsed.success) return formError({ ticketPrice: parsed.error.issues[0].message });
+  await db.ownerSettings.upsert({ where: { id: "main" }, create: { id: "main", ticketPrice: parsed.data.ticketPrice }, update: { ticketPrice: parsed.data.ticketPrice } });
+  revalidatePath("/settings");
   return { saved: true };
 }
 
