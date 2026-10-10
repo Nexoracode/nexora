@@ -1,27 +1,22 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { PageHeader } from "@/components/page-header";
 import { db } from "@/lib/db";
 import { formatDateTime, formatToman } from "@/lib/format";
 import { entryTypeLabel } from "@/lib/support-labels";
-import { AdjustForm } from "./adjust-form";
+import { AdjustForm } from "./wallet-adjust-form";
 
-export default async function SiteWalletPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const site = await db.site.findUnique({
-    where: { id },
-    select: { id: true, domain: true, walletBalance: true, walletEntries: { orderBy: { createdAt: "desc" }, take: 50 } },
+/** The site's wallet: balance, a manual change and the history; shown as a tab on the site page. */
+export async function WalletPanel({ siteId }: { siteId: string }) {
+  const site = await db.site.findUniqueOrThrow({
+    where: { id: siteId },
+    select: { walletBalance: true, walletEntries: { orderBy: { createdAt: "desc" }, take: 50 } },
   });
-  if (!site) notFound();
-
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href={`/sites/${site.id}`} className="mb-3 inline-block text-sm text-brand">← بازگشت به سایت</Link>
-        <PageHeader title="کیف پول" description={`${site.domain} · موجودی: ${formatToman(Number(site.walletBalance))}`} />
-      </div>
+    <div className="space-y-5">
+      <section className="card max-w-4xl">
+        <p className="m-0 text-sm text-slate-500">موجودی</p>
+        <p className="m-0 mt-1 text-xl font-bold">{formatToman(Number(site.walletBalance))}</p>
+      </section>
 
-      <AdjustForm siteId={site.id} />
+      <AdjustForm siteId={siteId} />
 
       <div className="card overflow-x-auto !p-0">
         <table className="w-full min-w-[40rem] text-sm">

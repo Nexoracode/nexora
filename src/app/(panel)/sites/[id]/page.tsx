@@ -7,6 +7,7 @@ import { getClientNames, getFeatureOptions, getPackageOptions } from "@/lib/cata
 import { db } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { SiteDangerZone } from "./danger-zone";
+import { WalletPanel } from "./wallet-panel";
 
 export default async function SitePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,7 +22,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
     <div className="space-y-6">
       <div>
         <Link href="/" className="mb-3 inline-block text-sm text-brand">← بازگشت به سایت‌ها</Link>
-        <PageHeader title={site.domain} description={`آخرین اتصال: ${formatDateTime(site.lastSeenAt)} · کلید: ${site.keyPrefix}…`} action={<Link href={`/sites/${site.id}/wallet`} className="btn btn-ghost">کیف پول</Link>} />
+        <PageHeader title={site.domain} description={`آخرین اتصال: ${formatDateTime(site.lastSeenAt)} · کلید: ${site.keyPrefix}…`} />
       </div>
       <SiteEditor
         mode="edit"
@@ -39,6 +40,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
           notes: site.notes ?? "",
           featureKeys: site.features.map((f) => f.featureKey),
         }}
+        extraTabs={[{ id: "wallet", label: "کیف پول", content: <WalletPanel siteId={site.id} /> }]}
         infoTop={<SiteDangerZone siteId={site.id} keyPrefix={site.keyPrefix} />}
         infoAside={
           // On wide screens the card is exactly as tall as the form beside it and its list scrolls inside;
