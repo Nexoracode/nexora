@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
 
-/** Bounds shared by the site's form, the license API and the panel's forms. */
-export const supportLimits = { subject: 191, message: 5000, trackingCode: 60, freeMonthsMax: 60, topupMin: 1_000, topupMax: 100_000_000 } as const;
+export { supportLimits } from "@/lib/support-limits";
 
 /** `date` moved forward by whole calendar months (UTC); a day that does not exist in the target month lands on its last day. */
 export function addMonths(date: Date, months: number): Date {

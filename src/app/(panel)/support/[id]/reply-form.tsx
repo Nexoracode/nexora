@@ -5,7 +5,7 @@ import { type FormState } from "@/app/actions";
 import { closeTicketAction, replyTicketAction } from "@/app/support-actions";
 import { Field, SubmitButton } from "@/components/ui";
 import { useResultToast } from "@/components/use-result-toast";
-import { supportLimits } from "@/lib/support";
+import { supportLimits } from "@/lib/support-limits";
 
 /** Answer box under a ticket's thread, and the button that closes it. */
 export function ReplyForm({ ticketId }: { ticketId: string }) {
