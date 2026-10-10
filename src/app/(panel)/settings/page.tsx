@@ -15,6 +15,7 @@ export default async function OwnerSettingsPage() {
           bankName: owner?.bankName ?? "",
           contactPhone: owner?.contactPhone ?? "",
           note: owner?.note ?? "",
+          ticketPrice: owner ? Number(owner.ticketPrice) : 0,
         }}
       />
     </>

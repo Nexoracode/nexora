@@ -35,6 +35,35 @@ enum LicenseEventType {
   PURCHASE_RESOLVED
 }
 
+enum TicketStatus {
+  AWAITING_PAYMENT
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+// How a support ticket was paid for.
+enum TicketCharge {
+  FREE
+  WALLET
+  ONLINE
+}
+
+enum WalletEntryType {
+  TOPUP
+  TICKET_FEE
+  ADMIN_CREDIT
+  ADMIN_DEBIT
+}
+
+enum TopupStatus {
+  AWAITING_PAYMENT
+  PENDING
+  APPROVED
+  REJECTED
+  FAILED
+}
+
 // Catalog of sellable capabilities. `key` matches LICENSE_FEATURES in the store project.
 model Feature {
   key       String   @id @db.VarChar(64)
@@ -92,6 +121,10 @@ model Site {
   status        SiteStatus @default(ACTIVE)
   contractPrice Decimal    @default(0) @db.Decimal(14, 0)
   notes         String?    @db.VarChar(1000)
+  // Support is free until `supportFreeUntil` (set from `supportFreeMonths` when that is saved); after that every ticket costs the fee in OwnerSettings.
+  supportFreeMonths Int       @default(0)
+  supportFreeUntil  DateTime?
+  walletBalance     Decimal   @default(0) @db.Decimal(14, 0)
   lastSeenAt    DateTime?
   // Where the site accepts "refresh now" messages; learned from its check-ins and limited to the registered domain.
   callbackUrl   String?    @db.VarChar(300)
@@ -103,6 +136,9 @@ model Site {
   events           LicenseEvent[]
   purchaseRequests PurchaseRequest[]
   ratings          Rating[]
+  tickets          SupportTicket[]
+  walletEntries    WalletEntry[]
+  walletTopups     WalletTopup[]
 
   @@index([clientId])
 }
@@ -138,6 +174,8 @@ model OwnerSettings {
   bankName     String? @db.VarChar(60)
   contactPhone String? @db.VarChar(11)
   note         String? @db.VarChar(500)
+  // What one support ticket costs (toman) once a site's free support is over; 0 = tickets are free.
+  ticketPrice  Decimal @default(0) @db.Decimal(14, 0)
 }
 
 // A customer site asked to unlock a feature after paying; approving it adds the feature to the site.
@@ -188,4 +226,78 @@ model Rating {
   @@unique([siteId, packageId])
   @@index([featureKey])
   @@index([packageId])
+}
+
+model SupportTicket {
+  id        String       @id @default(cuid())
+  siteId    String
+  subject   String       @db.VarChar(191)
+  status    TicketStatus @default(OPEN)
+  charge    TicketCharge @default(FREE)
+  // What this ticket cost (toman); 0 while support was free.
+  fee       Decimal      @default(0) @db.Decimal(14, 0)
+  // Direct (gateway) payment only.
+  authority String?      @unique @db.VarChar(64)
+  refId     String?      @db.VarChar(64)
+  returnUrl String?      @db.VarChar(500)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  closedAt  DateTime?
+
+  site     Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  messages SupportMessage[]
+
+  @@index([siteId, createdAt])
+  @@index([status, updatedAt])
+}
+
+model SupportMessage {
+  id        String   @id @default(cuid())
+  ticketId  String
+  // True when the owner wrote it, false for the site's admin.
+  fromOwner Boolean  @default(false)
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+}
+
+/// Append-only history of a site's wallet; `amount` is signed and `balanceAfter` snapshots the balance.
+model WalletEntry {
+  id           String          @id @default(cuid())
+  siteId       String
+  amount       Decimal         @db.Decimal(14, 0)
+  balanceAfter Decimal         @db.Decimal(14, 0)
+  type         WalletEntryType
+  description  String          @db.VarChar(191)
+  ticketId     String?
+  topupId      String?
+  createdAt    DateTime        @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, createdAt])
+}
+
+/// A site's request to charge its wallet: online (verified with the gateway) or card-to-card (approved by the owner).
+model WalletTopup {
+  id           String         @id @default(cuid())
+  siteId       String
+  amount       Decimal        @db.Decimal(14, 0)
+  method       PurchaseMethod
+  status       TopupStatus
+  trackingCode String?        @db.VarChar(60)
+  rejectReason String?        @db.VarChar(500)
+  authority    String?        @unique @db.VarChar(64)
+  refId        String?        @db.VarChar(64)
+  returnUrl    String?        @db.VarChar(500)
+  createdAt    DateTime       @default(now())
+  resolvedAt   DateTime?
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, createdAt])
+  @@index([status, createdAt])
 }

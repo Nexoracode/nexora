@@ -21,7 +21,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
     <div className="space-y-6">
       <div>
         <Link href="/" className="mb-3 inline-block text-sm text-brand">← بازگشت به سایت‌ها</Link>
-        <PageHeader title={site.domain} description={`آخرین اتصال: ${formatDateTime(site.lastSeenAt)} · کلید: ${site.keyPrefix}…`} />
+        <PageHeader title={site.domain} description={`آخرین اتصال: ${formatDateTime(site.lastSeenAt)} · کلید: ${site.keyPrefix}…`} action={<Link href={`/sites/${site.id}/wallet`} className="btn btn-ghost">کیف پول</Link>} />
       </div>
       <SiteEditor
         mode="edit"
@@ -35,6 +35,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
           clientPhone: site.client.phone ?? "",
           status: site.status,
           contractPrice: Number(site.contractPrice),
+          supportFreeMonths: site.supportFreeMonths,
           notes: site.notes ?? "",
           featureKeys: site.features.map((f) => f.featureKey),
         }}

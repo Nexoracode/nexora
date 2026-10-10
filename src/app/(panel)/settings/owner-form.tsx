@@ -3,9 +3,10 @@
 import { useActionState } from "react";
 import { saveOwnerSettingsAction } from "@/app/actions";
 import { useResultToast } from "@/components/use-result-toast";
+import { PriceInput } from "@/components/price-input";
 import { Field, SubmitButton } from "@/components/ui";
 
-type Defaults = { holderName: string; cardNumber: string; sheba: string; bankName: string; contactPhone: string; note: string };
+type Defaults = { holderName: string; cardNumber: string; sheba: string; bankName: string; contactPhone: string; note: string; ticketPrice: number };
 
 // Limits mirror ownerSchema in src/app/actions.ts and the OwnerSettings columns in prisma/schema.prisma.
 const LIMITS = { holderName: 120, cardNumber: 19, sheba: 26, bankName: 60, contactPhone: 11, note: 500 } as const;
@@ -32,6 +33,9 @@ export function OwnerForm({ defaults }: { defaults: Defaults }) {
         </Field>
         <Field label="شماره تماس" htmlFor="contactPhone" error={errors.contactPhone} hint="09xxxxxxxxx">
           <input id="contactPhone" name="contactPhone" dir="ltr" inputMode="tel" defaultValue={defaults.contactPhone} maxLength={LIMITS.contactPhone} className="input text-left" {...a11y("contactPhone")} />
+        </Field>
+        <Field label="هزینهٔ هر تیکت پشتیبانی (تومان)" htmlFor="ticketPrice" error={errors.ticketPrice} hint="۰ یعنی تیکت‌ها رایگان است">
+          <PriceInput id="ticketPrice" name="ticketPrice" defaultValue={defaults.ticketPrice || ""} {...a11y("ticketPrice")} />
         </Field>
         <div className="sm:col-span-2">
           <Field label="توضیح برای مشتری" htmlFor="note" error={errors.note} hint={`حداکثر ${LIMITS.note} نویسه`}>

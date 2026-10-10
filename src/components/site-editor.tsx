@@ -21,14 +21,15 @@ export type SiteDefaults = {
   clientPhone: string;
   status: "ACTIVE" | "SUSPENDED";
   contractPrice: number;
+  supportFreeMonths: number;
   notes: string;
   featureKeys: string[];
 };
 
-const emptySite: SiteDefaults = { domain: "", clientName: "", clientPhone: "", status: "ACTIVE", contractPrice: 0, notes: "", featureKeys: [] };
+const emptySite: SiteDefaults = { domain: "", clientName: "", clientPhone: "", status: "ACTIVE", contractPrice: 0, supportFreeMonths: 0, notes: "", featureKeys: [] };
 
 // Limits mirror siteSchema in src/app/actions.ts and the Site columns in prisma/schema.prisma.
-const LIMITS = { domain: 191, clientName: 120, clientPhone: 20, notes: 1000 } as const;
+const LIMITS = { supportFreeMonths: 2, domain: 191, clientName: 120, clientPhone: 20, notes: 1000 } as const;
 
 export type ExtraTab = { id: string; label: string; badge?: number; content: ReactNode };
 
@@ -117,6 +118,9 @@ export function SiteEditor({ action, features, packages, site = emptySite, clien
             </Field>
             <Field label="مبلغ قرارداد (تومان)" htmlFor="contractPrice" error={errors.contractPrice}>
               <PriceInput id="contractPrice" name="contractPrice" value={price} onValueChange={setPrice} {...invalid("contractPrice")} />
+            </Field>
+            <Field label="ماه رایگان پشتیبانی" htmlFor="supportFreeMonths" error={errors.supportFreeMonths} hint="۰ یعنی از همان ابتدا پولی است">
+              <input id="supportFreeMonths" name="supportFreeMonths" dir="ltr" inputMode="numeric" defaultValue={site.supportFreeMonths} maxLength={LIMITS.supportFreeMonths} className="input text-left" {...invalid("supportFreeMonths")} />
             </Field>
             <div className="sm:col-span-2">
               <Field label="یادداشت" htmlFor="notes" error={errors.notes} hint={`حداکثر ${LIMITS.notes} نویسه`}>

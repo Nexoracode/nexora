@@ -11,6 +11,7 @@ import { notifySites } from "@/lib/notify-sites";
 import { grantPurchase } from "@/lib/purchases";
 import { generateLicenseKey, normalizeDomain } from "@/lib/license-token";
 import { normalizeDigits } from "@/lib/format";
+import { addMonths, supportLimits } from "@/lib/support";
 
 export type FormState = { error?: string; fieldErrors?: Record<string, string>; key?: string; siteId?: string; saved?: boolean };
 
@@ -46,6 +47,7 @@ const siteSchema = z.object({
   clientPhone: z.string().trim().max(20, "شماره حداکثر ۲۰ نویسه است.").optional(),
   status: z.enum(["ACTIVE", "SUSPENDED"]),
   contractPrice: priceField,
+  supportFreeMonths: z.preprocess((v) => normalizeDigits(String(v ?? "")).trim() || "0", z.coerce.number({ message: "تعداد ماه را به‌صورت عدد وارد کنید." }).int("تعداد ماه باید عدد صحیح باشد.").min(0, "تعداد ماه نمی‌تواند منفی باشد.").max(supportLimits.freeMonthsMax, `حداکثر ${supportLimits.freeMonthsMax} ماه.`)),
   notes: z.string().trim().max(1000, "یادداشت حداکثر ۱۰۰۰ نویسه است.").optional(),
 });
 
@@ -56,6 +58,7 @@ function readSiteForm(formData: FormData) {
     clientPhone: formData.get("clientPhone") || undefined,
     status: formData.get("status") ?? "ACTIVE",
     contractPrice: formData.get("contractPrice"),
+    supportFreeMonths: formData.get("supportFreeMonths"),
     notes: formData.get("notes") || undefined,
   });
   if (!parsed.success) {
@@ -95,6 +98,8 @@ export async function createSiteAction(_: FormState, formData: FormData): Promis
       keyPrefix: license.prefix,
       status: data.status,
       contractPrice: data.contractPrice,
+      supportFreeMonths: data.supportFreeMonths,
+      supportFreeUntil: data.supportFreeMonths > 0 ? addMonths(new Date(), data.supportFreeMonths) : null,
       notes: data.notes,
       features: { create: featureKeys.map((featureKey) => ({ featureKey })) },
       events: { create: { type: "SITE_CREATED", message: `سایت با ${featureKeys.length} قابلیت ثبت شد.` } },
@@ -111,7 +116,7 @@ export async function updateSiteAction(siteId: string, _: FormState, formData: F
   const result = readSiteForm(formData);
   if (!result.ok) return formError(result.fieldErrors);
   const { data } = result;
-  const current = await db.site.findUnique({ where: { id: siteId }, select: { status: true, features: { select: { featureKey: true } } } });
+  const current = await db.site.findUnique({ where: { id: siteId }, select: { status: true, supportFreeMonths: true, features: { select: { featureKey: true } } } });
   if (!current) return { error: "سایت پیدا نشد." };
   const clash = await db.site.findUnique({ where: { domain: data.domain }, select: { id: true } });
   if (clash && clash.id !== siteId) return formError({ domain: "برای این دامنه قبلاً سایت ثبت شده است." });
@@ -135,6 +140,8 @@ export async function updateSiteAction(siteId: string, _: FormState, formData: F
       domain: data.domain,
       status: data.status,
       contractPrice: data.contractPrice,
+      // The free period restarts from today only when the number of months was changed.
+      ...(data.supportFreeMonths !== current.supportFreeMonths ? { supportFreeMonths: data.supportFreeMonths, supportFreeUntil: data.supportFreeMonths > 0 ? addMonths(new Date(), data.supportFreeMonths) : null } : {}),
       notes: data.notes ?? null,
       features: { deleteMany: {}, create: featureKeys.map((featureKey) => ({ featureKey })) },
       events: { create: events },
@@ -249,6 +256,7 @@ const ownerSchema = z.object({
   bankName: z.string().trim().max(60, "نام بانک حداکثر ۶۰ نویسه است."),
   contactPhone: z.string().regex(/^(09\d{9})?$/, "شماره تماس باید به‌صورت 09xxxxxxxxx و ۱۱ رقم باشد."),
   note: z.string().trim().max(500, "توضیح حداکثر ۵۰۰ نویسه است."),
+  ticketPrice: priceField,
 });
 
 export async function saveOwnerSettingsAction(_: FormState, formData: FormData): Promise<FormState> {
@@ -260,6 +268,7 @@ export async function saveOwnerSettingsAction(_: FormState, formData: FormData):
     bankName: formData.get("bankName") ?? "",
     contactPhone: digitsOnly(formData.get("contactPhone")),
     note: formData.get("note") ?? "",
+    ticketPrice: formData.get("ticketPrice"),
   });
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};

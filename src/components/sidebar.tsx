@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Boxes, Globe, Inbox, LogOut, Menu, Package, SlidersHorizontal, Star, Wallet, X } from "lucide-react";
+import { Boxes, Globe, Inbox, LifeBuoy, LogOut, Menu, Package, SlidersHorizontal, Star, Wallet, X } from "lucide-react";
 import { logoutAction } from "@/app/actions";
 import { SubmitButton } from "@/components/ui";
 
@@ -14,6 +14,13 @@ const groups = [
       { href: "/", label: "سایت‌ها", icon: Globe },
       { href: "/requests", label: "درخواست‌های خرید", icon: Inbox },
       { href: "/ratings", label: "امتیازها", icon: Star },
+    ],
+  },
+  {
+    title: "پشتیبانی",
+    links: [
+      { href: "/support", label: "تیکت‌ها", icon: LifeBuoy },
+      { href: "/topups", label: "شارژ کیف پول", icon: Wallet },
     ],
   },
   {
@@ -34,7 +41,7 @@ const groups = [
 const isActive = (href: string, pathname: string) => (href === "/" ? pathname === "/" || pathname.startsWith("/sites") : pathname.startsWith(href));
 
 /** Fixed menu on the start (right) edge on desktop; a slide-over drawer behind a top bar on mobile. */
-export function Sidebar({ pendingRequests }: { pendingRequests: number }) {
+export function Sidebar({ pendingRequests, openTickets, pendingTopups }: { pendingRequests: number; openTickets: number; pendingTopups: number }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -73,7 +80,10 @@ export function Sidebar({ pendingRequests }: { pendingRequests: number }) {
                   >
                     <Icon size={18} aria-hidden />
                     <span className="flex-1">{label}</span>
-                    {href === "/requests" && pendingRequests > 0 && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-medium text-white">{pendingRequests.toLocaleString("fa-IR")}</span>}
+                    {(() => {
+                      const badge = href === "/requests" ? pendingRequests : href === "/support" ? openTickets : href === "/topups" ? pendingTopups : 0;
+                      return badge > 0 && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-medium text-white">{badge.toLocaleString("fa-IR")}</span>;
+                    })()}
                   </Link>
                 );
               })}
