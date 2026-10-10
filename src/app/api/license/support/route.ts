@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         fee,
         freeUntil: site.supportFreeUntil?.toISOString() ?? null,
         walletBalance: Number(site.walletBalance),
-        onlineEnabled: getOnlinePaymentConfig() !== null,
+        onlineEnabled: (await getOnlinePaymentConfig()) !== null,
         owner: owner ? { holderName: owner.holderName, cardNumber: owner.cardNumber, sheba: owner.sheba, bankName: owner.bankName, contactPhone: owner.contactPhone, note: owner.note } : null,
         tickets: tickets.map((t) => ({ id: t.id, subject: t.subject, status: t.status, charge: t.charge, fee: Number(t.fee), createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() })),
         entries: entries.map((e) => ({ id: e.id, amount: Number(e.amount), balanceAfter: Number(e.balanceAfter), type: e.type, description: e.description, createdAt: e.createdAt.toISOString() })),
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ ticketId });
       }
 
-      const payment = getOnlinePaymentConfig();
+      const payment = await getOnlinePaymentConfig();
       if (!payment) return fail(409, "پرداخت آنلاین فعال نیست؛ از کیف پول استفاده کنید.");
       if (!input.returnUrl || !sameDomain(input.returnUrl)) return fail(400, "آدرس بازگشت نامعتبر است.");
       const ticket = await db.supportTicket.create({ data: { ...data, charge: "ONLINE", status: "AWAITING_PAYMENT", returnUrl: input.returnUrl }, select: { id: true } });
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
 
     case "topup": {
       if (input.method === "online") {
-        const payment = getOnlinePaymentConfig();
+        const payment = await getOnlinePaymentConfig();
         if (!payment) return fail(409, "پرداخت آنلاین فعال نیست؛ از کارت‌به‌کارت استفاده کنید.");
         if (!input.returnUrl || !sameDomain(input.returnUrl)) return fail(400, "آدرس بازگشت نامعتبر است.");
         const topup = await db.walletTopup.create({ data: { siteId, amount: input.amount, method: "ONLINE", status: "AWAITING_PAYMENT", returnUrl: input.returnUrl }, select: { id: true } });

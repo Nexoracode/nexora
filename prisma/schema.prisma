@@ -301,3 +301,36 @@ model WalletTopup {
   @@index([siteId, createdAt])
   @@index([status, createdAt])
 }
+
+/// An online payment gateway the owner configured in the panel (credentials are stored encrypted).
+model GatewaySetting {
+  provider            String   @id @db.VarChar(40)
+  credentialEncrypted String   @db.Text
+  credentialMasked    String   @db.VarChar(80)
+  isSandbox           Boolean  @default(false)
+  isActive            Boolean  @default(true)
+  updatedAt           DateTime @updatedAt
+}
+
+/// The owner's Faraz SMS account: API key (encrypted) and the sender line.
+model SmsSettings {
+  id              String   @id @default("main")
+  apiKeyEncrypted String?  @db.Text
+  apiKeyMasked    String?  @db.VarChar(80)
+  lineNumber      String?  @db.VarChar(40)
+  isActive        Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+}
+
+/// Every SMS the panel sent (or failed to send), newest first on the SMS page.
+model SmsLog {
+  id        String   @id @default(cuid())
+  siteId    String?
+  phone     String   @db.VarChar(11)
+  text      String   @db.VarChar(1000)
+  ok        Boolean
+  error     String?  @db.VarChar(255)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

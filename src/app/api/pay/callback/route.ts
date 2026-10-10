@@ -36,7 +36,7 @@ export async function GET(request: Request) {
   };
   if (params.get("Status") !== "OK" || !authority || authority !== purchase.authority || purchase.amount === null) return fail();
 
-  const payment = getOnlinePaymentConfig();
+  const payment = await getOnlinePaymentConfig();
   if (!payment) return fail();
   try {
     const { refId } = await verifyPayment(payment, { amountRials: tomanToRials(Number(purchase.amount)), authority });

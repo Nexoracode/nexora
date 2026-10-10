@@ -19,7 +19,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
     // Active sites that have not checked in for two days, or never have.
     db.site.count({ where: { status: "ACTIVE", OR: [{ lastSeenAt: null }, { lastSeenAt: { lt: new Date(now - 2 * DAY) } }] } }),
   ]);
-  const payment = getOnlinePaymentConfig();
+  const payment = await getOnlinePaymentConfig();
   const gatewayMode = payment === null ? "off" : payment.sandbox ? "sandbox" : "live";
   return (
     <div className="min-h-screen lg:ps-64">

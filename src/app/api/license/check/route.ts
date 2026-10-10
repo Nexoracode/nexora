@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     catalog: catalog.map((f) => ({ key: f.key, title: f.title, description: f.description ?? "", group: f.group, price: Number(f.price), isActive: f.isActive })),
     owner,
     // The merchant id never leaves the panel; sites only learn whether paying online is possible.
-    onlineEnabled: getOnlinePaymentConfig() !== null,
+    onlineEnabled: (await getOnlinePaymentConfig()) !== null,
     pending: pending.flatMap((p) => (p.featureKey ? [p.featureKey] : [])),
     pendingPackages: pending.flatMap((p) => (p.packageId ? [p.packageId] : [])),
     rejected,

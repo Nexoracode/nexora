@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   // The buyer is sent back to the site that asked, never to an address of someone else's choosing.
   if (normalizeDomain(new URL(returnUrl).host) !== normalizeDomain(site.domain)) return fail(400, "آدرس بازگشت نامعتبر است.");
 
-  const payment = getOnlinePaymentConfig();
+  const payment = await getOnlinePaymentConfig();
   if (!payment) return fail(409, "پرداخت آنلاین فعال نیست؛ از کارت‌به‌کارت استفاده کنید.");
 
   const owned = new Set(site.features.map((f) => f.featureKey));
