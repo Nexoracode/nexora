@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageSquare } from "lucide-react";
 import { checkSmsAccountAction, saveSmsSettingsAction, sendSmsSampleAction } from "@/app/settings-actions";
 import { toast } from "@/components/toaster";
 import { useResultToast } from "@/components/use-result-toast";
@@ -9,6 +9,7 @@ import { Field, SubmitButton } from "@/components/ui";
 import type { SmsAccount } from "@/lib/faraz";
 import { formatToman } from "@/lib/format";
 import { smsLimits } from "@/lib/sms-limits";
+import { ConnectionHeader } from "./status-badge";
 
 /** The Faraz SMS connection: API key (never shown again), the sender line, and a look at the account behind them. */
 export function SmsForm({ masked, lineNumber, isActive }: { masked: string | null; lineNumber: string; isActive: boolean }) {
@@ -35,7 +36,13 @@ export function SmsForm({ masked, lineNumber, isActive }: { masked: string | nul
 
   return (
     <div className="space-y-5">
-      <form action={action} className="card max-w-4xl space-y-2">
+      <form action={action} className="card">
+        <ConnectionHeader
+          mark={<MessageSquare size={22} aria-hidden className="text-slate-500" />}
+          title="فراز اس‌ام‌اس"
+          description="ارسال پیامک به مشتری‌ها از طریق حساب فراز"
+          state={!masked ? "missing" : isActive ? "active" : "inactive"}
+        />
         <div className="grid gap-x-4 sm:grid-cols-2">
           <Field label="کلید API فراز اس‌ام‌اس" htmlFor="apiKey" error={errors.apiKey} hint={masked ? `ذخیره‌شده: ${masked} · برای تغییر، کلید تازه را وارد کنید` : undefined}>
             <input id="apiKey" name="apiKey" type="password" dir="ltr" autoComplete="off" maxLength={smsLimits.apiKey} className="input text-left" {...a11y("apiKey")} />
@@ -57,7 +64,7 @@ export function SmsForm({ masked, lineNumber, isActive }: { masked: string | nul
       </form>
 
       {account && (
-        <section className="card max-w-4xl" aria-label="حساب فراز اس‌ام‌اس">
+        <section className="card" aria-label="حساب فراز اس‌ام‌اس">
           <dl className="m-0 grid gap-3 text-sm sm:grid-cols-3">
             <div><dt className="text-slate-500">اعتبار</dt><dd className="m-0 mt-1 font-bold">{account.balanceToman === null ? "—" : formatToman(account.balanceToman)}</dd></div>
             <div><dt className="text-slate-500">پیامک قابل ارسال</dt><dd className="m-0 mt-1 font-bold">{account.smsCount === null ? "—" : account.smsCount.toLocaleString("fa-IR")}</dd></div>

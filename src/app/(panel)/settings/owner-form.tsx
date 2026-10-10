@@ -18,7 +18,7 @@ export function OwnerForm({ defaults }: { defaults: Defaults }) {
   const a11y = (name: string) => ({ "aria-invalid": errors[name] ? true : undefined, "aria-describedby": `${name}-msg` }) as const;
   return (
     <form action={action} className="space-y-5">
-      <section className="card max-w-4xl">
+      <section className="card">
         <h2 className="m-0 mb-4 text-base font-bold">حساب بانکی</h2>
         <div className="grid gap-x-4 sm:grid-cols-2">
           <Field label="نام صاحب حساب" htmlFor="holderName" error={errors.holderName}>
@@ -36,7 +36,7 @@ export function OwnerForm({ defaults }: { defaults: Defaults }) {
         </div>
       </section>
 
-      <section className="card max-w-4xl">
+      <section className="card">
         <h2 className="m-0 mb-4 text-base font-bold">پیام به مشتری</h2>
         <div className="grid gap-x-4 sm:grid-cols-2">
           <Field label="شماره تماس" htmlFor="contactPhone" error={errors.contactPhone} hint="09xxxxxxxxx">

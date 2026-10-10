@@ -12,8 +12,8 @@ export function SupportForm({ ticketPrice }: { ticketPrice: number }) {
   useResultToast(state, "هزینهٔ تیکت ذخیره شد.");
   const error = state.fieldErrors?.ticketPrice;
   return (
-    <form action={action} className="card max-w-4xl">
-      <div className="max-w-sm">
+    <form action={action} className="card">
+      <div className="grid gap-x-4 sm:grid-cols-2">
         <Field label="هزینهٔ هر تیکت (تومان)" htmlFor="ticketPrice" error={error} hint="۰ یعنی تیکت‌ها رایگان است">
           <PriceInput id="ticketPrice" name="ticketPrice" defaultValue={ticketPrice || ""} aria-invalid={error ? true : undefined} aria-describedby="ticketPrice-msg" />
         </Field>
