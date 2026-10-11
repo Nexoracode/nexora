@@ -9,6 +9,8 @@ const schema = z.object({
   OWNER_API_TOKEN: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(32).optional()),
   // DeepSeek API key for the panel's AI assistant (/ai). Unset keeps the assistant off. AI_BASE_URL is any OpenAI-compatible endpoint.
   DEEPSEEK_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(10).optional()),
+  // Generic key for any other OpenAI-compatible provider (OpenRouter, Groq, Gemini...); wins over DEEPSEEK_API_KEY.
+  AI_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(3).optional()),
   AI_MODEL: z.string().min(1).default("deepseek-flash"),
   AI_BASE_URL: z.url().default("https://api.deepseek.com"),
   LICENSE_PRIVATE_KEY: z.string().default(""),
@@ -23,3 +25,14 @@ const schema = z.object({
 });
 
 export const env = schema.parse(process.env);
+
+/** Where the assistant sends requests. A local endpoint (Ollama, LM Studio) needs no key, so it is on without one. */
+const aiKey = env.AI_API_KEY ?? env.DEEPSEEK_API_KEY;
+const aiHost = new URL(env.AI_BASE_URL).hostname;
+const aiLocal = ["localhost", "127.0.0.1", "[::1]"].includes(aiHost);
+export const ai = {
+  key: aiKey,
+  enabled: Boolean(aiKey) || aiLocal,
+  /** Only DeepSeek understands the `thinking` switch; other providers reject unknown fields. */
+  deepseek: aiHost.endsWith("deepseek.com"),
+};

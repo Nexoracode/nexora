@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { ai, env } from "@/lib/env";
 import type { ChatMessage, PendingCall, ToolCall } from "@/lib/ai-chat-types";
 import { apiTools, toolByName, type ToolDef } from "@/lib/ai-tools";
 import { ApiError } from "@/lib/owner-api-core";
@@ -16,6 +16,7 @@ You help the owner look things up and manage sites, wallets, the feature catalog
 
 Rules:
 - Reply in Persian, briefly and plainly. Amounts are in toman; format them with thousands separators.
+- Format replies in Markdown: short paragraphs, bullet or numbered lists for several items, **bold** for key values, and a table for lists of records with several fields. Never put a whole answer on one line.
 - Never invent ids, keys or numbers. Look them up with the read tools first.
 - Read tools run immediately. Write tools do not run until the owner approves them on a card in the chat, so call a write tool only when the owner clearly asked for that change, once per change, and say in one sentence what it will do and why. Do not ask "are you sure?" in text; the approval card is the confirmation.
 - If a write is declined, do not retry it; ask what they would like instead.
@@ -55,14 +56,14 @@ type ModelReply = { message: { content: string | null; tool_calls?: ToolCall[] }
 async function callModel(messages: ChatMessage[]): Promise<ModelReply> {
   const response = await fetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${env.DEEPSEEK_API_KEY}` },
+    headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
     // Thinking mode would require sending reasoning_content back with every tool turn; a plain tool loop is faster and cheaper.
-    body: JSON.stringify({ model: env.AI_MODEL, messages: [{ role: "system", content: SYSTEM }, ...messages], tools: apiTools(), thinking: { type: "disabled" }, temperature: 0.2, max_tokens: 4096 }),
+    body: JSON.stringify({ model: env.AI_MODEL, messages: [{ role: "system", content: SYSTEM }, ...messages], tools: apiTools(), ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}), temperature: 0.2, max_tokens: 4096 }),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     cache: "no-store",
   });
-  if (response.status === 401 || response.status === 403) throw new ApiError(502, "کلید DEEPSEEK_API_KEY معتبر نیست.");
-  if (response.status === 402) throw new ApiError(502, "اعتبار حساب DeepSeek تمام شده است.");
+  if (response.status === 401 || response.status === 403) throw new ApiError(502, "کلید API مدل (AI_API_KEY) معتبر نیست.");
+  if (response.status === 402) throw new ApiError(502, "اعتبار یا سهمیهٔ حساب مدل تمام شده است.");
   if (response.status === 429) throw new ApiError(429, "محدودیت درخواست مدل؛ کمی بعد دوباره تلاش کنید.");
   if (!response.ok) {
     console.error("[ai-chat] model error", response.status, (await response.text().catch(() => "")).slice(0, 300));
@@ -80,7 +81,7 @@ async function callModel(messages: ChatMessage[]): Promise<ModelReply> {
  * stateless: the browser sends the whole conversation back with its decisions to continue.
  */
 export async function runChat(history: ChatMessage[], decisions: Record<string, Decision>): Promise<ChatResult> {
-  if (!env.DEEPSEEK_API_KEY) throw new ApiError(503, "DEEPSEEK_API_KEY تنظیم نشده است.");
+  if (!ai.enabled) throw new ApiError(503, "AI_API_KEY تنظیم نشده است.");
   const messages = [...history];
 
   for (let step = 0; step < MAX_STEPS; step++) {

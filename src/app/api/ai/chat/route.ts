@@ -2,18 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import type { ChatMessage } from "@/lib/ai-chat-types";
 import { runChat } from "@/lib/ai-chat";
+import { message } from "@/lib/ai-chat-schema";
 import { isOwner } from "@/lib/auth";
 import { ApiError } from "@/lib/owner-api-core";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const toolCall = z.object({ id: z.string().min(1).max(100), type: z.literal("function"), function: z.object({ name: z.string().min(1).max(128), arguments: z.string().max(20_000) }) });
-const message = z.discriminatedUnion("role", [
-  z.object({ role: z.literal("user"), content: z.string().max(8000) }),
-  z.object({ role: z.literal("assistant"), content: z.string().max(60_000).nullable(), tool_calls: z.array(toolCall).max(20).optional() }),
-  z.object({ role: z.literal("tool"), tool_call_id: z.string().min(1).max(100), content: z.string().max(60_000) }),
-]);
 const bodySchema = z.object({
   messages: z.array(message).min(1).max(80),
   decisions: z.record(z.string(), z.enum(["approve", "reject"])).default({}),
