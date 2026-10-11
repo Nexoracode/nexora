@@ -5,6 +5,8 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1),
   OWNER_PASSWORD: z.string().min(1),
   SESSION_SECRET: z.string().min(32),
+  // Bearer token for /api/owner/* (the MCP server uses it). Unset keeps that API switched off.
+  OWNER_API_TOKEN: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(32).optional()),
   LICENSE_PRIVATE_KEY: z.string().default(""),
   LICENSE_TOKEN_DAYS: z.coerce.number().int().min(1).max(90).default(7),
   // Zarinpal merchant id for the "pay online" option. Unset means online payment is off. The gateway runs in

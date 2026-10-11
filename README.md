@@ -46,3 +46,23 @@ LICENSE_PUBLIC_KEY=<خروجی keys:generate>
 - شناسهٔ پذیرنده در `.env` است: `ZARINPAL_MERCHANT_ID` (خالی یعنی پرداخت آنلاین خاموش است).
 - حالت درگاه از `NODE_ENV` می‌آید: در `production` درگاه زنده، در بقیه (dev و test) sandbox.
 - `APP_URL` باید آدرس عمومی همین پنل باشد، چون درگاه کاربر را به آن برمی‌گرداند.
+
+## API مالک (`/api/owner/*`)
+
+یک API JSON برای ابزارهای خودکار مثل سرور MCP. با کوکی پنل کار نمی‌کند؛ فقط با هدر `Authorization: Bearer <OWNER_API_TOKEN>`. اگر `OWNER_API_TOKEN` (حداقل ۳۲ نویسه) در `.env` خالی باشد، این API خاموش است و ۴۰۴ می‌دهد.
+
+| مسیر | کار |
+|---|---|
+| `GET /summary` | تعداد سایت‌ها، خریدهای در انتظار، شارژهای در انتظار، تیکت‌های باز |
+| `GET /sites?q=&status=&limit=&offset=` · `GET /sites/:id` | فهرست و جزئیات سایت (بدون کلید لایسنس) |
+| `PATCH /sites/:id` | `status`، `contractPrice`، `supportFreeMonths`، `notes`، `addFeatures`، `removeFeatures` |
+| `GET /sites/:id/wallet` · `POST /sites/:id/wallet` | تاریخچهٔ کیف پول · `{direction: credit\|debit, amount, description}` |
+| `GET /features` · `PATCH /features/:key` | کاتالوگ · `title`، `group`، `description`، `price`، `isActive` |
+| `GET /packages` · `POST /packages` · `PATCH /packages/:id` | بسته‌ها · `{name, price, featureKeys}` |
+| `GET /purchases?status=` · `POST /purchases/:id/approve` · `POST /purchases/:id/reject` | درخواست‌های خرید · رد با `{reason}` |
+| `GET /topups?status=` · `POST /topups/:id/approve` · `POST /topups/:id/reject` | شارژ کیف پول |
+| `GET /tickets?status=&q=` · `GET /tickets/:id` · `POST /tickets/:id/reply` · `POST /tickets/:id/close` | پشتیبانی · پاسخ با `{body}` |
+| `GET /ratings` | امتیازها |
+
+عمداً وجود ندارد: ساخت/حذف سایت و بازتولید کلید لایسنس (کلید نباید از مسیر چت عبور کند)، حذف بسته، تنظیمات حساب بانکی/درگاه/پیامک و ارسال پیامک.
+منطق همان توابع پنل است (`grantPurchase`، `grantTopup`، `creditWallet`، `debitWallet`، `notifySites`) و در `src/lib/owner-ops.ts` قرار دارد.
