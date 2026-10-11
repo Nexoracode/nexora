@@ -9,13 +9,13 @@ const SYSTEM_PROMPT = "You are a helpful assistant inside the owner's admin pane
 
 /** Sends the conversation to the model. Throws a user-safe Persian message on any failure. */
 export async function askAssistant(messages: ChatMessage[]): Promise<string> {
-  if (!env.ANTHROPIC_API_KEY) throw new Error("هوش مصنوعی هنوز تنظیم نشده است.");
+  if (!env.DEEPSEEK_API_KEY) throw new Error("هوش مصنوعی هنوز تنظیم نشده است.");
   let response: Response;
   try {
-    response = await fetch("https://api.anthropic.com/v1/messages", {
+    response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: env.ANTHROPIC_MODEL, max_tokens: 1024, system: SYSTEM_PROMPT, messages }),
+      headers: { "content-type": "application/json", authorization: `Bearer ${env.DEEPSEEK_API_KEY}` },
+      body: JSON.stringify({ model: env.DEEPSEEK_MODEL, messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages], stream: false }),
       signal: AbortSignal.timeout(60_000),
       cache: "no-store",
     });
@@ -23,8 +23,8 @@ export async function askAssistant(messages: ChatMessage[]): Promise<string> {
     throw new Error("ارتباط با هوش مصنوعی برقرار نشد. دوباره تلاش کنید.");
   }
   if (!response.ok) throw new Error("هوش مصنوعی پاسخ نداد. کمی بعد دوباره تلاش کنید.");
-  const data = (await response.json()) as { content?: { type: string; text?: string }[] };
-  const text = (data.content ?? []).filter((part) => part.type === "text").map((part) => part.text ?? "").join("").trim();
+  const data = (await response.json().catch(() => ({}))) as { choices?: { message?: { content?: string | null } }[] };
+  const text = data.choices?.[0]?.message?.content?.trim() ?? "";
   if (!text) throw new Error("پاسخی دریافت نشد. دوباره تلاش کنید.");
   return text;
 }

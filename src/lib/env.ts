@@ -13,8 +13,8 @@ const schema = z.object({
   // "true" forces the gateway's sandbox, "false" the live one; unset follows NODE_ENV. A test merchant id only works in the sandbox.
   ZARINPAL_SANDBOX: z.preprocess((value) => (value === "" ? undefined : value), z.enum(["true", "false"]).optional()),
   // Key for the panel's AI chat. Unset means the chat page tells the owner it is not configured.
-  ANTHROPIC_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().optional()),
-  ANTHROPIC_MODEL: z.string().min(1).default("claude-sonnet-5-5"),
+  DEEPSEEK_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().optional()),
+  DEEPSEEK_MODEL: z.string().min(1).default("deepseek-flash"),
   // Public address of this panel; the payment gateway sends buyers back to it.
   APP_URL: z.url().default("http://localhost:3001"),
 });

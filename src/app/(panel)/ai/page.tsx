@@ -6,7 +6,7 @@ export default function AiPage() {
   return (
     <>
       <PageHeader title="هوش مصنوعی" />
-      <AiChat configured={Boolean(env.ANTHROPIC_API_KEY)} />
+      <AiChat configured={Boolean(env.DEEPSEEK_API_KEY)} />
     </>
   );
 }
