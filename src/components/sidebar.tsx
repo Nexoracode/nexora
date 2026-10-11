@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Boxes, Globe, Inbox, LifeBuoy, LogOut, MessageSquare, Menu, Package, SlidersHorizontal, Star, Wallet, X } from "lucide-react";
+import { Boxes, Bot, Globe, Inbox, LifeBuoy, LogOut, MessageSquare, Menu, Package, SlidersHorizontal, Star, Wallet, X } from "lucide-react";
 import { logoutAction } from "@/app/actions";
 import { SubmitButton } from "@/components/ui";
 
@@ -34,6 +34,7 @@ const groups = [
   {
     title: "تنظیمات",
     links: [
+      { href: "/ai", label: "دستیار هوشمند", icon: Bot },
       { href: "/settings", label: "تنظیمات", icon: Wallet },
     ],
   },

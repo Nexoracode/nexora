@@ -356,3 +356,10 @@ model SmsLog {
 
   @@index([createdAt])
 }
+
+// The owner's current AI assistant conversation (messages and approval cards waiting), so it survives reloads and devices.
+model AiConversation {
+  id        String   @id @default("main")
+  data      Json
+  updatedAt DateTime @updatedAt
+}
