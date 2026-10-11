@@ -102,11 +102,11 @@ export const tools: ToolDef[] = [
 
 export const toolByName = new Map(tools.map((t) => [t.name, t]));
 
-/** Tool definitions in the shape the Messages API expects. */
+/** Tool definitions in the OpenAI-compatible shape DeepSeek expects. */
 export function apiTools() {
   return tools.map((t) => {
-    const { $schema: _ignored, ...schema } = z.toJSONSchema(t.input) as Record<string, unknown>;
-    return { name: t.name, description: t.description, input_schema: schema as { type: "object"; properties?: Record<string, unknown> } };
+    const { $schema: _ignored, ...parameters } = z.toJSONSchema(t.input) as Record<string, unknown>;
+    return { type: "function" as const, function: { name: t.name, description: t.description, parameters: parameters as { type: "object"; properties?: Record<string, unknown> } } };
   });
 }
 

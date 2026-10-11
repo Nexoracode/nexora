@@ -1,4 +1,7 @@
-/** What the browser and the chat route exchange; free of server-only imports so client components can use it. */
-export type ChatBlock = { type: string; [key: string]: unknown };
-export type ChatMessage = { role: "user" | "assistant"; content: string | ChatBlock[] };
+/** What the browser and the chat route exchange (OpenAI chat format, as DeepSeek speaks it); free of server-only imports. */
+export type ToolCall = { id: string; type: "function"; function: { name: string; arguments: string } };
+export type ChatMessage =
+  | { role: "user"; content: string }
+  | { role: "assistant"; content: string | null; tool_calls?: ToolCall[] }
+  | { role: "tool"; tool_call_id: string; content: string };
 export type PendingCall = { id: string; name: string; label: string; input: unknown };

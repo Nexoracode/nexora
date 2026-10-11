@@ -8,22 +8,18 @@ type Decisions = Record<string, "approve" | "reject">;
 
 const toolLabel = (name: string) => name.replaceAll("_", " ");
 
-/** Text the owner sees for a message: user text, assistant text, and one chip per tool call. */
+/** What the owner sees for a message: user text, assistant text, and one chip per tool call. Tool results stay hidden. */
 function Bubble({ message }: { message: ChatMessage }) {
-  if (typeof message.content === "string") {
-    return message.role === "user" ? <div className="ms-auto max-w-[85%] whitespace-pre-wrap rounded-2xl bg-brand px-4 py-2.5 text-sm text-white">{message.content}</div> : <div className="max-w-[85%] whitespace-pre-wrap text-sm">{message.content}</div>;
-  }
-  const blocks = message.content;
-  if (message.role === "user") return null; // tool results are shown through the assistant's follow-up
+  if (message.role === "tool") return null;
+  if (message.role === "user") return <div className="ms-auto max-w-[85%] whitespace-pre-wrap rounded-2xl bg-brand px-4 py-2.5 text-sm text-white">{message.content}</div>;
+  const text = message.content?.trim();
+  if (!text && !message.tool_calls?.length) return null;
   return (
     <div className="max-w-[85%] space-y-2">
-      {blocks.map((block, index) =>
-        block.type === "text" && typeof block.text === "string" && block.text.trim() ? (
-          <div key={index} className="whitespace-pre-wrap text-sm">{block.text}</div>
-        ) : block.type === "tool_use" ? (
-          <span key={index} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"><Wrench size={12} aria-hidden />{toolLabel(String(block.name))}</span>
-        ) : null,
-      )}
+      {text && <div className="whitespace-pre-wrap text-sm">{text}</div>}
+      {message.tool_calls?.map((call) => (
+        <span key={call.id} className="me-2 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600"><Wrench size={12} aria-hidden />{toolLabel(call.function.name)}</span>
+      ))}
     </div>
   );
 }
@@ -80,7 +76,7 @@ export function AiChat({ enabled }: { enabled: boolean }) {
   }
 
   if (!enabled) {
-    return <div className="card text-sm text-slate-600">دستیار خاموش است. مقدار <code dir="ltr">ANTHROPIC_API_KEY</code> را در تنظیمات محیط پنل بگذارید و دوباره اجرا کنید.</div>;
+    return <div className="card text-sm text-slate-600">دستیار خاموش است. مقدار <code dir="ltr">DEEPSEEK_API_KEY</code> را در تنظیمات محیط پنل بگذارید و دوباره اجرا کنید.</div>;
   }
 
   return (

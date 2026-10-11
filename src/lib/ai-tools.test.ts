@@ -4,8 +4,9 @@ import { apiTools, toolByName, tools } from "./ai-tools";
 
 test("every tool exposes a JSON schema object to the model", () => {
   for (const tool of apiTools()) {
-    assert.equal(tool.input_schema.type, "object", tool.name);
-    assert.ok(tool.description.length > 10, tool.name);
+    assert.equal(tool.type, "function");
+    assert.equal(tool.function.parameters.type, "object", tool.function.name);
+    assert.ok(tool.function.description.length > 10, tool.function.name);
   }
   assert.equal(new Set(tools.map((t) => t.name)).size, tools.length);
 });
