@@ -5,7 +5,7 @@ import { Loader2, Send } from "lucide-react";
 import { aiChatLimits, type ChatMessage } from "@/lib/ai-chat";
 
 /** A plain text chat: the conversation lives in this component only and is gone on reload. */
-export function AiChat({ configured }: { configured: boolean }) {
+export function AiChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
@@ -19,7 +19,7 @@ export function AiChat({ configured }: { configured: boolean }) {
   async function send(event?: FormEvent) {
     event?.preventDefault();
     const text = draft.trim();
-    if (!text || pending || !configured) return;
+    if (!text || pending) return;
     const next = [...messages, { role: "user" as const, content: text }];
     setMessages(next);
     setDraft("");
@@ -47,7 +47,7 @@ export function AiChat({ configured }: { configured: boolean }) {
   return (
     <div className="card flex h-[calc(100dvh-14rem)] min-h-96 flex-col !p-0">
       <div className="flex-1 space-y-4 overflow-y-auto p-4 text-sm leading-7" aria-live="polite">
-        {messages.length === 0 && <p className="m-0 text-slate-500">{configured ? "پیامی بنویسید تا گفتگو شروع شود." : "هوش مصنوعی هنوز تنظیم نشده است."}</p>}
+        {messages.length === 0 && <p className="m-0 text-slate-500">پیامی بنویسید تا گفتگو شروع شود.</p>}
         {messages.map((message, index) => (
           <div key={index}>
             <p className="m-0 mb-1 text-xs text-slate-400">{message.role === "user" ? "شما" : "هوش مصنوعی"}</p>
@@ -64,14 +64,13 @@ export function AiChat({ configured }: { configured: boolean }) {
             rows={2}
             value={draft}
             maxLength={aiChatLimits.message}
-            disabled={!configured}
             aria-invalid={error ? true : undefined}
             aria-describedby="ai-chat-msg"
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={onKeyDown}
             className="input flex-1 resize-none"
           />
-          <button type="submit" disabled={pending || !configured || !draft.trim()} className="btn btn-primary">
+          <button type="submit" disabled={pending || !draft.trim()} className="btn btn-primary">
             {pending ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <Send size={16} className="-scale-x-100" aria-hidden />}
             ارسال
           </button>

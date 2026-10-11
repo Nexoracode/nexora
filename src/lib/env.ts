@@ -12,9 +12,10 @@ const schema = z.object({
   ZARINPAL_MERCHANT_ID: z.preprocess((value) => (value === "" ? undefined : value), z.string().uuid().optional()),
   // "true" forces the gateway's sandbox, "false" the live one; unset follows NODE_ENV. A test merchant id only works in the sandbox.
   ZARINPAL_SANDBOX: z.preprocess((value) => (value === "" ? undefined : value), z.enum(["true", "false"]).optional()),
-  // Key for the panel's AI chat. Unset means the chat page tells the owner it is not configured.
-  DEEPSEEK_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().optional()),
-  DEEPSEEK_MODEL: z.string().min(1).default("deepseek-flash"),
+  // The panel's AI chat talks to any OpenAI-compatible server. The default is a local Ollama, which is free and needs no key.
+  AI_BASE_URL: z.url().default("http://localhost:11434/v1"),
+  AI_MODEL: z.string().min(1).default("qwen2.5:7b"),
+  AI_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().optional()),
   // Public address of this panel; the payment gateway sends buyers back to it.
   APP_URL: z.url().default("http://localhost:3001"),
 });

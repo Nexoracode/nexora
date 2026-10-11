@@ -9,13 +9,12 @@ const SYSTEM_PROMPT = "You are a helpful assistant inside the owner's admin pane
 
 /** Sends the conversation to the model. Throws a user-safe Persian message on any failure. */
 export async function askAssistant(messages: ChatMessage[]): Promise<string> {
-  if (!env.DEEPSEEK_API_KEY) throw new Error("هوش مصنوعی هنوز تنظیم نشده است.");
   let response: Response;
   try {
-    response = await fetch("https://api.deepseek.com/chat/completions", {
+    response = await fetch(`${env.AI_BASE_URL.replace(/\/+$/, "")}/chat/completions`, {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${env.DEEPSEEK_API_KEY}` },
-      body: JSON.stringify({ model: env.DEEPSEEK_MODEL, messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages], stream: false }),
+      headers: { "content-type": "application/json", ...(env.AI_API_KEY ? { authorization: `Bearer ${env.AI_API_KEY}` } : {}) },
+      body: JSON.stringify({ model: env.AI_MODEL, messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages], stream: false }),
       signal: AbortSignal.timeout(60_000),
       cache: "no-store",
     });
