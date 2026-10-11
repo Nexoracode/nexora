@@ -17,6 +17,7 @@
     "site:create": "tsx scripts/create-site.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@prisma/adapter-mariadb": "7.9.1",
     "@prisma/client": "7.9.1",
     "jose": "^6.1.2",

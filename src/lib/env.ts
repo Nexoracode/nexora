@@ -7,6 +7,9 @@ const schema = z.object({
   SESSION_SECRET: z.string().min(32),
   // Bearer token for /api/owner/* (the MCP server uses it). Unset keeps that API switched off.
   OWNER_API_TOKEN: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(32).optional()),
+  // Anthropic API key for the panel's AI assistant (/ai). Unset keeps the assistant off.
+  ANTHROPIC_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(10).optional()),
+  AI_MODEL: z.string().min(1).default("claude-haiku-5-5"),
   LICENSE_PRIVATE_KEY: z.string().default(""),
   LICENSE_TOKEN_DAYS: z.coerce.number().int().min(1).max(90).default(7),
   // Zarinpal merchant id for the "pay online" option. Unset means online payment is off. The gateway runs in
