@@ -1,13 +1,14 @@
 /**
  * The Nexora "N". With `spinning`, an open ring (not a full circle) fades in around it and turns,
- * to show that something is working. The ring sits outside the box, so the layout never moves.
+ * to show that something is working. The ring sits outside the box (`ringInset` is how far, in % of the size),
+ * so the layout never moves.
  */
-export function Logo({ size = 28, spinning = false, className = "" }: { size?: number; spinning?: boolean; className?: string }) {
+export function Logo({ size = 28, spinning = false, ringInset = 34, className = "" }: { size?: number; spinning?: boolean; ringInset?: number; className?: string }) {
   return (
     <span className={`relative inline-block shrink-0 ${className}`} style={{ width: size, height: size }}>
       {/* eslint-disable-next-line @next/next/no-img-element -- a small fixed brand mark */}
       <img src="/logo.png" alt="" width={size} height={size} className="block" />
-      <svg aria-hidden viewBox="0 0 100 100" className={`logo-ring pointer-events-none absolute -inset-[34%] size-[168%] transition-opacity duration-300 ${spinning ? "opacity-100" : "opacity-0"}`} style={{ animationPlayState: spinning ? "running" : "paused" }}>
+      <svg aria-hidden viewBox="0 0 100 100" className={`logo-ring pointer-events-none absolute transition-opacity duration-300 ${spinning ? "opacity-100" : "opacity-0"}`} style={{ inset: `${-ringInset}%`, width: `${100 + ringInset * 2}%`, height: `${100 + ringInset * 2}%`, animationPlayState: spinning ? "running" : "paused" }}>
         <defs>
           <linearGradient id="logo-ring-gradient" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#22e8ff" />

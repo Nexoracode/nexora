@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import { ArrowRight, ArrowUp, Check, Copy, Loader2, Menu, PanelRightClose, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { conversationTitle, type ChatMessage, type PendingCall } from "@/lib/ai-chat-types";
+import { BrandLoader } from "@/components/brand-loader";
 import { ConfirmForm } from "@/components/confirm-form";
 import { Logo } from "@/components/logo";
 import { MarkdownText } from "./markdown";
@@ -415,7 +416,7 @@ export function ChatApp({ enabled, ownerName }: { enabled: boolean; ownerName: s
           <>
             <div className="flex-1 overflow-y-auto">
               <div className="mx-auto max-w-5xl space-y-6 px-4 py-6">
-                {loading && <div className="flex items-center gap-2 text-sm text-[#7a8196]"><Loader2 size={16} className="animate-spin" aria-hidden />در حال بارگذاری…</div>}
+                {loading && <div className="grid min-h-[55vh] place-items-center"><BrandLoader /></div>}
                 {messages.map((message, index) => {
                   if (message.role === "user") return <UserMessage key={index} text={message.content} />;
                   if (message.role === "assistant")
