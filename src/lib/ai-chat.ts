@@ -127,7 +127,11 @@ async function callModel(messages: ChatMessage[], onChunks?: OnChunks): Promise<
     await response.body?.cancel().catch(() => {});
     await new Promise((resolve) => setTimeout(resolve, waitMs));
   }
-  if (response.status === 401 || response.status === 403) throw new ApiError(502, "کلید API مدل (AI_API_KEY) معتبر نیست.");
+  if (response.status === 401 || response.status === 403) {
+    // 403 is also what providers answer for a blocked network/region (VPN, proxy), so keep the real reason in the log.
+    console.error("[ai-chat] model auth error", response.status, (await response.text().catch(() => "")).slice(0, 300));
+    throw new ApiError(502, `کلید API مدل (AI_API_KEY) معتبر نیست یا دسترسی شبکه مسدود است (کد ${response.status}).`);
+  }
   if (response.status === 402) throw new ApiError(502, "اعتبار یا سهمیهٔ حساب مدل تمام شده است.");
   if (response.status === 429) throw new ApiError(429, "محدودیت درخواست مدل؛ کمی بعد دوباره تلاش کنید.");
   if (!response.ok) {
