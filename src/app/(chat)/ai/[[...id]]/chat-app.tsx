@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import { ArrowRight, ArrowUp, Check, Copy, Loader2, Menu, PanelRightClose, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { conversationTitle, type ChatMessage, type PendingCall } from "@/lib/ai-chat-types";
+import { ConfirmForm } from "@/components/confirm-form";
 import { Logo } from "@/components/logo";
 import { MarkdownText } from "./markdown";
 import { ToolCards } from "./tool-cards";
@@ -216,10 +217,11 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
   }
 
   async function remove(id: string) {
-    if (!window.confirm("این گفتگو حذف شود؟")) return;
-    setList((current) => current.filter((item) => item.id !== id));
-    await fetch(`/api/ai/conversations/${id}`, { method: "DELETE" }).catch(() => {});
+    // The row (and the dialog inside it) goes away only once the server has deleted it, so the dialog shows its spinner meanwhile.
+    const response = await fetch(`/api/ai/conversations/${id}`, { method: "DELETE" }).catch(() => null);
+    if (!response?.ok) return setError("حذف گفتگو انجام نشد.");
     if (activeRef.current === id) startNew();
+    setList((current) => current.filter((item) => item.id !== id));
   }
 
   async function persist(id: string, history: ChatMessage[], waiting: PendingCall[]): Promise<boolean> {
@@ -363,7 +365,15 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
           {list.map((item) => (
             <div key={item.id} className={`group flex items-center rounded-xl ${item.id === activeId ? "bg-[#dfe2ee]" : "hover:bg-[#e2e5f1]"}`}>
               <button type="button" onClick={() => choose(item.id)} className="min-w-0 flex-1 truncate px-3 py-2 text-start text-sm" title={item.title}>{item.title}</button>
-              <button type="button" onClick={() => void remove(item.id)} aria-label="حذف گفتگو" className="me-1 rounded-lg p-1.5 text-[#7a8196] opacity-0 hover:bg-[#d3d7e8] hover:text-[#b42318] focus:opacity-100 group-hover:opacity-100"><Trash2 size={15} aria-hidden /></button>
+              <ConfirmForm
+                action={() => remove(item.id)}
+                title="حذف گفتگو"
+                message={`گفتگوی «${item.title}» برای همیشه حذف می‌شود و برگشت‌پذیر نیست.`}
+                confirmLabel="حذف گفتگو"
+                trigger={(open) => (
+                  <button type="button" onClick={open} aria-label="حذف گفتگو" className="me-1 rounded-lg p-1.5 text-[#7a8196] opacity-0 hover:bg-[#d3d7e8] hover:text-[#b42318] focus:opacity-100 group-hover:opacity-100"><Trash2 size={15} aria-hidden /></button>
+                )}
+              />
             </div>
           ))}
         </nav>
