@@ -7,19 +7,24 @@ const STARTS = [0, 0.63, 1.35, 2.17, 2.9];
 const WORD_WIDTH = 3.9;
 
 /**
- * The full loading screen: the N with its turning ring, then E-X-O-R-A sliding out from behind the N one after
- * the other into place so the two read as one name, a band of light sweeping across the letters, and the
- * status line underneath.
+ * The full loading screen: the N with its turning ring alone in the middle, gliding left into its place, then
+ * E-X-O-R-A sliding out from behind it one after the other so the two read as one name, a band of light sweeping
+ * across the letters, and the status line underneath.
  */
 export function BrandLoader({ size = 44, label = "در حال آماده‌سازی…" }: { size?: number; label?: string }) {
   const fontSize = size * 1.12;
   const gap = size * 0.42;
+  // Half the width of the gap plus the word: how far right the N starts so that it is centred on its own.
+  const dx = (gap + (STARTS[STARTS.length - 1] + 0.78) * fontSize) / 2;
   return (
     <div role="status" aria-live="polite" className="flex flex-col items-center gap-5">
       {/* The wordmark is Latin, so it reads left to right whatever the page direction is. */}
       <div dir="ltr" className="flex items-center" style={{ gap }}>
-        {/* Above the letters, so they come out from behind it. */}
-        <Logo size={size} spinning ringInset={34} className="z-10" />
+        {/* Above the letters, so they come out from behind it. It first sits alone in the middle of the lockup (--dx to the
+            right of its place), then glides left to it. */}
+        <span className="brand-logo-slide relative z-10 inline-flex" style={{ "--dx": `${dx}px` } as CSSProperties}>
+          <Logo size={size} spinning ringInset={34} />
+        </span>
         <span aria-hidden className="brand-wordmark relative z-0 select-none uppercase leading-none" style={{ fontSize, letterSpacing: size * 0.02 }}>
           {LETTERS.map((letter, index) => (
             // --from: how far back (behind the N) the letter starts. --s / --w: the letter's offset in the word and the

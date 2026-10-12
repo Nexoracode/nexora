@@ -200,8 +200,18 @@ button.input {
   -webkit-background-clip: text;
   background-clip: text;
   animation:
-    brand-letter-out 0.9s cubic-bezier(0.22, 0.9, 0.3, 1.12) calc(0.15s + var(--i) * 0.11s) both,
-    brand-sweep 2.2s ease-in-out 1.7s infinite;
+    brand-letter-out 0.9s cubic-bezier(0.22, 0.9, 0.3, 1.12) calc(1.55s + var(--i) * 0.11s) both,
+    brand-sweep 2.2s ease-in-out 3.2s infinite;
+}
+
+/* The N waits alone in the middle for a moment, then glides smoothly to its place on the left. */
+.brand-logo-slide {
+  animation: brand-logo-slide 0.95s cubic-bezier(0.65, 0, 0.35, 1) 0.55s both;
+}
+
+@keyframes brand-logo-slide {
+  from { transform: translateX(var(--dx)); }
+  to { transform: none; }
 }
 
 @keyframes brand-letter-out {
@@ -217,7 +227,8 @@ button.input {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand-letter { animation: none; }
+  .brand-letter,
+  .brand-logo-slide { animation: none; }
 }
 
 /* EXORA beside the logo's N, at rest: the same face and gradient as the loading screen's wordmark. */
