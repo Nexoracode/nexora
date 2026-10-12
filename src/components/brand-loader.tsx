@@ -3,8 +3,8 @@ import { Logo } from "@/components/logo";
 
 const LETTERS = ["E", "X", "O", "R", "A"];
 // Where each letter starts, in em, counted from the first letter's left edge (the face's rough advance widths).
-const STARTS = [0, 0.64, 1.34, 2.15, 2.83];
-const WORD_WIDTH = 3.55;
+const STARTS = [0, 0.63, 1.35, 2.17, 2.9];
+const WORD_WIDTH = 3.9;
 
 /**
  * The full loading screen: the N with its turning ring, then E-X-O-R-A sliding out from behind the N one after
