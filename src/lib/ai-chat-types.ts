@@ -13,4 +13,4 @@ export function conversationTitle(messages: ChatMessage[]): string {
   return text.length > 60 ? `${text.slice(0, 60)}…` : text || "گفتگوی جدید";
 }
 
-export const CONVERSATION_ID = /^[A-Za-z0-9-]{8,64}$/;
+export const CONVERSATION_ID = /^[A-Za-z0-9-]{4,64}$/;

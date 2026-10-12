@@ -52,14 +52,18 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
         </p>
       </header>
 
-      <div className="space-y-3 bg-[#f6f7fb] p-4">
+      <div className="space-y-5 p-5">
         {(ticket.messages ?? []).map((message, index) => (
-          <blockquote key={index} className={`m-0 rounded-xl border-s-4 px-4 py-3 ${message.fromOwner ? "border-brand bg-[#eef0ff]" : "border-slate-400 bg-white"}`}>
-            <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
-              <strong className={message.fromOwner ? "text-brand" : "text-[#3a4054]"}>{message.fromOwner ? "پاسخ مالک" : "مشتری"}</strong>
-              <time className="text-[#7a8196]">{dateTime(message.createdAt)}</time>
+          // A quote: a solid vertical line down the whole message, brand-coloured for the owner and grey for the customer.
+          <blockquote key={index} className="m-0 flex gap-3.5">
+            <span aria-hidden className={`w-[3px] shrink-0 self-stretch rounded-full ${message.fromOwner ? "bg-brand" : "bg-slate-300"}`} />
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex flex-wrap items-baseline gap-x-3 text-xs">
+                <strong className={`text-sm ${message.fromOwner ? "text-brand" : "text-[#3a4054]"}`}>{message.fromOwner ? "پاسخ مالک" : "مشتری"}</strong>
+                <time className="text-[#7a8196]">{dateTime(message.createdAt)}</time>
+              </div>
+              <p dir="auto" className="m-0 whitespace-pre-wrap break-words text-sm leading-7 text-[#29304a]">{message.body}</p>
             </div>
-            <p dir="auto" className="m-0 whitespace-pre-wrap break-words text-sm leading-7">{message.body}</p>
           </blockquote>
         ))}
         {(ticket.messages ?? []).length === 0 && <p className="m-0 text-sm text-[#7a8196]">پیامی ثبت نشده است.</p>}

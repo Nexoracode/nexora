@@ -18,7 +18,7 @@ function formatElapsed(seconds: number) {
   if (seconds < 60) return `${seconds.toLocaleString("fa-IR")} ثانیه`;
   return `${Math.floor(seconds / 60).toLocaleString("fa-IR")}:${String(seconds % 60).padStart(2, "0")}`.replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
 }
-const idFromPath = (path: string) => path.match(/^\/ai\/([A-Za-z0-9-]{8,64})\/?$/)?.[1] ?? null;
+const idFromPath = (path: string) => path.match(/^\/ai\/([A-Za-z0-9-]{4,64})\/?$/)?.[1] ?? null;
 const newId = () =>
   typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
