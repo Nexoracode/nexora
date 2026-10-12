@@ -12,6 +12,9 @@ const schema = z.object({
   // Generic key for any other OpenAI-compatible provider (OpenRouter, Groq, Gemini...); wins over DEEPSEEK_API_KEY.
   AI_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(3).optional()),
   AI_MODEL: z.string().min(1).default("deepseek-flash"),
+  // HTTP proxy for the model requests only (a VPN client's local proxy, e.g. http://127.0.0.1:10808), for when the server itself
+  // is not behind the VPN. Unset = direct.
+  AI_PROXY_URL: z.preprocess((value) => (value === "" ? undefined : value), z.url().optional()),
   AI_BASE_URL: z.url().default("https://api.deepseek.com"),
   // The owner's first name, used to greet them on the assistant page ("سلام محمد، شب بخیر"). Unset greets without a name.
   OWNER_NAME: z.preprocess((value) => (value === "" ? undefined : value), z.string().max(40).optional()),

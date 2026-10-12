@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["mariadb"],
+  serverExternalPackages: ["mariadb", "undici"],
 };
 
 export default nextConfig;

@@ -1,6 +1,7 @@
 import { ai, env } from "@/lib/env";
 import type { ChatMessage, PendingCall, ToolCall } from "@/lib/ai-chat-types";
 import { apiTools, toolByName, type ToolDef } from "@/lib/ai-tools";
+import { modelFetch } from "@/lib/model-fetch";
 import { ApiError } from "@/lib/owner-api-core";
 import { matchRoute, ownerRoutes } from "@/lib/owner-ops";
 
@@ -114,7 +115,7 @@ async function callModel(messages: ChatMessage[], onChunks?: OnChunks): Promise<
   let response: Response;
   // A 429 arrives before any output, so it is safe to wait (honouring Retry-After) and send the same request again.
   for (let attempt = 0; ; attempt++) {
-    response = await fetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+    response = await modelFetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
       body,
@@ -148,7 +149,7 @@ async function callModel(messages: ChatMessage[], onChunks?: OnChunks): Promise<
 /** A short Persian title for a conversation, written by the model from its first exchange; null when it cannot. */
 export async function generateTitle(userText: string, replyText: string): Promise<string | null> {
   try {
-    const response = await fetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+    const response = await modelFetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
       // Reasoning models spend tokens thinking before they answer, so the budget is far above the title's length.
