@@ -224,14 +224,14 @@ button.input {
 
 @keyframes brand-logo-cycle {
   0%, 5.882% { transform: translateX(var(--dx)); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
-  17.059%, 74.118% { transform: none; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
-  85.294%, 100% { transform: translateX(var(--dx)); }
+  17.059%, 70.0% { transform: none; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  81.176%, 100% { transform: translateX(var(--dx)); }
 }
 
 @keyframes brand-ring-cycle {
   0%, 5.882% { --ring-tail: 170deg; animation-timing-function: ease-in; }
-  17.059%, 74.118% { --ring-tail: 360deg; animation-timing-function: ease-out; }
-  85.294%, 100% { --ring-tail: 170deg; }
+  17.059%, 70.0% { --ring-tail: 360deg; animation-timing-function: ease-out; }
+  81.176%, 100% { --ring-tail: 170deg; }
 }
 
 @keyframes brand-letter-0 {
