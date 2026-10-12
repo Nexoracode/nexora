@@ -6,7 +6,7 @@ export function BrandMark({ size = 26 }: { size?: number }) {
     // The wordmark is Latin, so it reads left to right whatever the page direction is.
     <span dir="ltr" role="img" aria-label="Nexora" className="inline-flex items-center" style={{ gap: size * 0.1 }}>
       <Logo size={size} />
-      <span aria-hidden className="brand-wordmark-static select-none uppercase leading-none" style={{ fontSize: size * 1.12, letterSpacing: size * 0.02 }}>EXORA</span>
+      <span aria-hidden className="brand-wordmark-static relative select-none uppercase leading-none" style={{ fontSize: size * 0.9, letterSpacing: size * 0.02, top: "0.053em" }}>EXORA</span>
     </span>
   );
 }
