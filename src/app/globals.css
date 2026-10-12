@@ -204,9 +204,9 @@ button.input {
 /*
  * One 8.5s loop (every part shares it, so they stay in step): the N sits alone in the middle, glides left while its
  * ring is eaten away (the arc shortens from its tail until nothing is left), E-X-O-R-A come out from behind it,
- * light sweeps over them, then the whole entrance plays backwards, moment for moment: the letters go back behind
- * the N in the opposite order with the mirrored easing, the N glides back to the middle and the ring grows again.
- * Each letter has its own keyframes because its way out starts when its way in ended.
+ * light sweeps over them, then it plays backwards: each letter retraces its own way in (same duration, mirrored
+ * easing), E leaving first and A last, then the N glides back to the middle and the ring grows again.
+ * Each letter has its own keyframes because the letters leave on a different schedule from the one they came on.
  */
 @property --ring-tail {
   syntax: "<angle>";
@@ -224,34 +224,34 @@ button.input {
 
 @keyframes brand-logo-cycle {
   0%, 5.882% { transform: translateX(var(--dx)); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
-  17.059%, 69.882% { transform: none; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
-  81.059%, 100% { transform: translateX(var(--dx)); }
+  17.059%, 74.118% { transform: none; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  85.294%, 100% { transform: translateX(var(--dx)); }
 }
 
 @keyframes brand-ring-cycle {
   0%, 5.882% { --ring-tail: 170deg; animation-timing-function: ease-in; }
-  17.059%, 69.882% { --ring-tail: 360deg; animation-timing-function: ease-out; }
-  81.059%, 100% { --ring-tail: 170deg; }
+  17.059%, 74.118% { --ring-tail: 360deg; animation-timing-function: ease-out; }
+  85.294%, 100% { --ring-tail: 170deg; }
 }
 
 @keyframes brand-letter-0 {
   0%, 10.0% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1.12); }
   11.271% { opacity: 0; }
   14.235% { opacity: 1; }
-  20.588%, 66.353% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.7, -0.12, 0.78, 0.1); }
-  72.706% { opacity: 1; }
-  75.671% { opacity: 0; }
-  76.941%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
+  20.588%, 61.176% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.7, -0.12, 0.78, 0.1); }
+  67.529% { opacity: 1; }
+  70.494% { opacity: 0; }
+  71.765%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
 }
 
 @keyframes brand-letter-1 {
   0%, 11.294% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1.12); }
   12.565% { opacity: 0; }
   15.529% { opacity: 1; }
-  21.882%, 65.059% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.7, -0.12, 0.78, 0.1); }
-  71.412% { opacity: 1; }
-  74.376% { opacity: 0; }
-  75.647%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
+  21.882%, 62.471% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.7, -0.12, 0.78, 0.1); }
+  68.824% { opacity: 1; }
+  71.788% { opacity: 0; }
+  73.059%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
 }
 
 @keyframes brand-letter-2 {
@@ -268,20 +268,20 @@ button.input {
   0%, 13.882% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1.12); }
   15.153% { opacity: 0; }
   18.118% { opacity: 1; }
-  24.471%, 62.471% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.7, -0.12, 0.78, 0.1); }
-  68.824% { opacity: 1; }
-  71.788% { opacity: 0; }
-  73.059%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
+  24.471%, 65.059% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.7, -0.12, 0.78, 0.1); }
+  71.412% { opacity: 1; }
+  74.376% { opacity: 0; }
+  75.647%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
 }
 
 @keyframes brand-letter-4 {
   0%, 15.176% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1.12); }
   16.447% { opacity: 0; }
   19.412% { opacity: 1; }
-  25.765%, 61.176% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.7, -0.12, 0.78, 0.1); }
-  67.529% { opacity: 1; }
-  70.494% { opacity: 0; }
-  71.765%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
+  25.765%, 66.353% { opacity: 1; transform: none; animation-timing-function: cubic-bezier(0.7, -0.12, 0.78, 0.1); }
+  72.706% { opacity: 1; }
+  75.671% { opacity: 0; }
+  76.941%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
 }
 
 @keyframes brand-sweep {
