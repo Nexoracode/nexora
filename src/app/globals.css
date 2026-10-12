@@ -199,37 +199,101 @@ button.input {
     linear-gradient(90deg, #22b8ff, #3b6bff 55%, #9b4dff) calc(var(--s) * -1) 0 / var(--w) 100% no-repeat;
   -webkit-background-clip: text;
   background-clip: text;
-  animation:
-    brand-letter-out 0.9s cubic-bezier(0.22, 0.9, 0.3, 1.12) calc(1s + var(--i) * 0.11s) both,
-    brand-sweep 2.2s ease-in-out 2.55s infinite;
 }
 
-/* The N waits alone in the middle for a moment, then glides smoothly to its place on the left. */
+/*
+ * One 8-second loop (everything shares it, so the parts stay in step): the N sits alone in the middle, glides left
+ * while its ring narrows away, E-X-O-R-A come out from behind it, light sweeps over them, then it all runs in
+ * reverse (letters back behind the N, the N back to the middle, the ring back around it) and starts again.
+ * Each letter has its own keyframes because the way out is in the opposite order to the way in.
+ */
 .brand-logo-slide {
-  animation: brand-logo-slide 0.95s cubic-bezier(0.65, 0, 0.35, 1) 0.55s both;
+  animation: brand-logo-cycle 8.0s linear infinite;
 }
 
-@keyframes brand-logo-slide {
-  from { transform: translateX(var(--dx)); }
-  to { transform: none; }
+.brand-logo-slide .logo-ring {
+  animation: logo-ring-spin 1.1s linear infinite, brand-ring-cycle 8.0s linear infinite;
 }
 
-@keyframes brand-letter-out {
-  from { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
-  35% { opacity: 0; }
-  60% { opacity: 1; }
-  to { opacity: 1; transform: none; }
+@keyframes brand-logo-cycle {
+  0%, 6.25% { transform: translateX(var(--dx)); animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  18.125%, 73.75% { transform: none; animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  85.625%, 100% { transform: translateX(var(--dx)); }
+}
+
+@keyframes brand-ring-cycle {
+  0%, 6.25% { scale: 1; opacity: 1; animation-timing-function: ease-in; }
+  18.125%, 73.75% { scale: 0.45; opacity: 0; animation-timing-function: ease-out; }
+  85.625%, 100% { scale: 1; opacity: 1; }
+}
+
+@keyframes brand-letter-0 {
+  0%, 10.625% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1.12); }
+  11.975% { opacity: 0; }
+  15.125% { opacity: 1; }
+  21.875%, 70.0% { opacity: 1; transform: none; animation-timing-function: ease-in; }
+  74.812% { opacity: 1; }
+  77.438% { opacity: 0; }
+  78.75%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
+}
+
+@keyframes brand-letter-1 {
+  0%, 12.0% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1.12); }
+  13.35% { opacity: 0; }
+  16.5% { opacity: 1; }
+  23.25%, 68.75% { opacity: 1; transform: none; animation-timing-function: ease-in; }
+  73.562% { opacity: 1; }
+  76.188% { opacity: 0; }
+  77.5%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
+}
+
+@keyframes brand-letter-2 {
+  0%, 13.375% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1.12); }
+  14.725% { opacity: 0; }
+  17.875% { opacity: 1; }
+  24.625%, 67.5% { opacity: 1; transform: none; animation-timing-function: ease-in; }
+  72.312% { opacity: 1; }
+  74.938% { opacity: 0; }
+  76.25%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
+}
+
+@keyframes brand-letter-3 {
+  0%, 14.75% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1.12); }
+  16.1% { opacity: 0; }
+  19.25% { opacity: 1; }
+  26.0%, 66.25% { opacity: 1; transform: none; animation-timing-function: ease-in; }
+  71.062% { opacity: 1; }
+  73.688% { opacity: 0; }
+  75.0%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
+}
+
+@keyframes brand-letter-4 {
+  0%, 16.125% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); animation-timing-function: cubic-bezier(0.22, 0.9, 0.3, 1.12); }
+  17.475% { opacity: 0; }
+  20.625% { opacity: 1; }
+  27.375%, 65.0% { opacity: 1; transform: none; animation-timing-function: ease-in; }
+  69.812% { opacity: 1; }
+  72.438% { opacity: 0; }
+  73.75%, 100% { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
 }
 
 @keyframes brand-sweep {
-  from { background-position: calc(var(--w) * -1.9 - var(--s)) 0, calc(var(--s) * -1) 0; }
-  to { background-position: calc(var(--w) * -0.1 - var(--s)) 0, calc(var(--s) * -1) 0; }
+  0%, 30.0% { background-position: calc(var(--w) * -1.9 - var(--s)) 0, calc(var(--s) * -1) 0; animation-timing-function: ease-in-out; }
+  57.5%, 100% { background-position: calc(var(--w) * -0.1 - var(--s)) 0, calc(var(--s) * -1) 0; }
 }
+.brand-letter:nth-child(1) { animation: brand-letter-0 8.0s linear infinite, brand-sweep 8.0s linear infinite; }
+.brand-letter:nth-child(2) { animation: brand-letter-1 8.0s linear infinite, brand-sweep 8.0s linear infinite; }
+.brand-letter:nth-child(3) { animation: brand-letter-2 8.0s linear infinite, brand-sweep 8.0s linear infinite; }
+.brand-letter:nth-child(4) { animation: brand-letter-3 8.0s linear infinite, brand-sweep 8.0s linear infinite; }
+.brand-letter:nth-child(5) { animation: brand-letter-4 8.0s linear infinite, brand-sweep 8.0s linear infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand-letter,
-  .brand-logo-slide { animation: none; }
+  .brand-logo-slide,
+  .brand-logo-slide .logo-ring,
+  .brand-letter { animation: none !important; }
+  .brand-logo-slide .logo-ring { opacity: 0; }
 }
+
 
 /* EXORA beside the logo's N, at rest: the same face and gradient as the loading screen's wordmark. */
 .brand-wordmark-static {

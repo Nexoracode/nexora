@@ -13,7 +13,7 @@ const WORD_WIDTH = 3.9;
  */
 export function BrandLoader({ size = 44, label = "در حال آماده‌سازی…" }: { size?: number; label?: string }) {
   const fontSize = size * 1.12;
-  const gap = size * 0.42;
+  const gap = size * 0.1;
   // Half the width of the gap plus the word: how far right the N starts so that it is centred on its own.
   const dx = (gap + (STARTS[STARTS.length - 1] + 0.78) * fontSize) / 2;
   return (
