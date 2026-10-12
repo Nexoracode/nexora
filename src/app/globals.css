@@ -167,9 +167,9 @@ button.input {
 
 /* EXORA beside the logo's N: it fades in, then a band of light keeps sweeping across the letters. */
 .brand-wordmark {
-  /* Outfit ExtraBold: round, geometric letters that sit well next to the logo's soft-cornered N. */
-  font-family: "Outfit", var(--font-sans);
-  font-weight: 800;
+  /* Nunito Black: every stroke ends in a round cap, like the soft corners of the logo's N. */
+  font-family: "Nunito", var(--font-sans);
+  font-weight: 900;
   background:
     linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.95) 50%, transparent 62%) 130% 0 / 260% 100% no-repeat,
     linear-gradient(90deg, #22b8ff, #3b6bff 55%, #9b4dff);
