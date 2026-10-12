@@ -24,13 +24,29 @@ export async function POST(request: NextRequest) {
   const { messages, decisions } = parsed.data;
   if (messages.length >= 80) return reply(400, "گفتگو خیلی طولانی شد؛ گفتگوی جدید شروع کنید.");
 
-  try {
-    const result = await runChat(messages as ChatMessage[], decisions);
-    return NextResponse.json(result, { headers: { "cache-control": "no-store" } });
-  } catch (error) {
-    if (error instanceof ApiError) return reply(error.status, error.message);
-    if (error instanceof DOMException && (error.name === "TimeoutError" || error.name === "AbortError")) return reply(504, "مدل دیر پاسخ داد؛ دوباره تلاش کنید.");
-    console.error("[ai-chat]", error);
-    return reply(500, "خطای داخلی.");
-  }
+  // Newline-delimited JSON: {"type":"tool","label"} while a tool runs, then one {"type":"done",...} or {"type":"error",...}.
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const emit = (event: unknown) => controller.enqueue(encoder.encode(JSON.stringify(event) + String.fromCharCode(10)));
+      try {
+        const result = await runChat(messages as ChatMessage[], decisions, {
+          onTool: (label) => emit({ type: "tool", label }),
+          // Every few chunks is enough for a counter the eye can follow.
+          onTokens: (total) => total % 4 === 0 && emit({ type: "tokens", total }),
+        });
+        emit({ type: "done", ...result });
+      } catch (error) {
+        if (error instanceof ApiError) emit({ type: "error", message: error.message });
+        else if (error instanceof DOMException && (error.name === "TimeoutError" || error.name === "AbortError")) emit({ type: "error", message: "مدل دیر پاسخ داد؛ دوباره تلاش کنید." });
+        else {
+          console.error("[ai-chat]", error);
+          emit({ type: "error", message: "خطای داخلی." });
+        }
+      } finally {
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, { headers: { "content-type": "application/x-ndjson; charset=utf-8", "cache-control": "no-store" } });
 }

@@ -357,9 +357,13 @@ model SmsLog {
   @@index([createdAt])
 }
 
-// The owner's current AI assistant conversation (messages and approval cards waiting), so it survives reloads and devices.
+// One saved AI assistant conversation of the owner (messages and approval cards waiting), shown in the chat's history list.
 model AiConversation {
-  id        String   @id @default("main")
+  id        String   @id @db.VarChar(64)
+  title     String   @default("گفتگوی جدید") @db.VarChar(120)
   data      Json
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([updatedAt])
 }

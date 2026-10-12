@@ -2,8 +2,21 @@
 
 @theme {
   --font-sans: "Vazirmatn", Tahoma, system-ui, sans-serif;
-  --color-brand: #4f46e5;
-  --color-brand-dark: #4338ca;
+  /* The Nexora logo's palette: cyan -> blue -> indigo -> violet. `brand` is its blue; indigo-* is remapped to the same family. */
+  --color-brand: #4361ee;
+  --color-brand-dark: #3651d4;
+  --color-brand-cyan: #22d3ee;
+  --color-brand-violet: #8b5cf6;
+  --color-indigo-50: #eef3ff;
+  --color-indigo-100: #dfe8ff;
+  --color-indigo-200: #c4d3ff;
+  --color-indigo-300: #9db6ff;
+  --color-indigo-400: #7490ff;
+  --color-indigo-500: #5675f8;
+  --color-indigo-600: #4361ee;
+  --color-indigo-700: #3651d4;
+  --color-indigo-800: #2d43a8;
+  --color-indigo-900: #283a80;
 }
 
 html {
@@ -84,13 +97,15 @@ button.input {
   cursor: not-allowed;
 }
 
+/* The primary button wears the logo's gradient: blue into violet. */
 .btn-primary {
-  background: var(--color-brand);
+  background: linear-gradient(135deg, #3b7bff 0%, #4f5cf0 55%, #7c5cf0 100%);
   color: #fff;
+  transition: filter 0.15s;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-brand-dark);
+  filter: brightness(0.92);
 }
 
 .btn-ghost {
@@ -132,4 +147,85 @@ button.input {
   .slide-out-right {
     animation: none;
   }
+}
+
+/* The assistant's "working on it" line: text with a light band sweeping across it. */
+.chat-shimmer {
+  background: linear-gradient(90deg, #7a8196 35%, #1f2330 50%, #7a8196 65%) 0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: chat-shimmer 1.8s linear infinite;
+}
+
+@keyframes chat-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-shimmer { animation: none; color: #5b6275; background: none; }
+}
+
+/* The logo's open ring turning around the N while the assistant works. */
+.logo-ring {
+  animation: logo-ring-spin 1.1s linear infinite;
+}
+
+@keyframes logo-ring-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-ring { animation: none; }
+}
+
+/*
+ * EXORA beside the logo's N: each letter slides out from behind the N into place, then a band of light sweeps over them.
+ * Every letter paints its own slice (--s = its offset, --w = the word's width) of one shared gradient and one shared
+ * sweep, because clipping a gradient to text does not work through letters that are being transformed.
+ */
+.brand-wordmark {
+  /* Nunito Black: every stroke ends in a round cap, like the soft corners of the logo's N. */
+  font-family: "Nunito", var(--font-sans);
+  font-weight: 900;
+}
+
+.brand-letter {
+  display: inline-block;
+  color: transparent;
+  background:
+    linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.95) 50%, transparent 62%) calc(var(--w) * -1.9 - var(--s)) 0 / calc(var(--w) * 3) 100% no-repeat,
+    linear-gradient(90deg, #22b8ff, #3b6bff 55%, #9b4dff) calc(var(--s) * -1) 0 / var(--w) 100% no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation:
+    brand-letter-out 0.9s cubic-bezier(0.22, 0.9, 0.3, 1.12) calc(0.15s + var(--i) * 0.11s) both,
+    brand-sweep 2.2s ease-in-out 1.7s infinite;
+}
+
+@keyframes brand-letter-out {
+  from { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
+  35% { opacity: 0; }
+  60% { opacity: 1; }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes brand-sweep {
+  from { background-position: calc(var(--w) * -1.9 - var(--s)) 0, calc(var(--s) * -1) 0; }
+  to { background-position: calc(var(--w) * -0.1 - var(--s)) 0, calc(var(--s) * -1) 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-letter { animation: none; }
+}
+
+/* EXORA beside the logo's N, at rest: the same face and gradient as the loading screen's wordmark. */
+.brand-wordmark-static {
+  font-family: "Nunito", var(--font-sans);
+  font-weight: 900;
+  background: linear-gradient(90deg, #22b8ff, #3b6bff 55%, #9b4dff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

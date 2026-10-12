@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { useFormStatus } from "react-dom";
+import { createPortal, useFormStatus } from "react-dom";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 type Tone = "danger" | "warning";
@@ -21,15 +21,17 @@ export function ConfirmForm({ action, title, message, confirmLabel, tone = "dang
   trigger: (open: () => void) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const formId = useId();
   return (
-    <form action={action}>
+    <form id={formId} action={action}>
       {trigger(() => setOpen(true))}
-      {open && <ConfirmDialog title={title} message={message} confirmLabel={confirmLabel} tone={tone} onClose={() => setOpen(false)} />}
+      {/* Drawn on document.body: inside a transformed parent (a sliding sidebar) `fixed` would centre on that parent instead of the page. */}
+      {open && typeof document !== "undefined" && createPortal(<ConfirmDialog formId={formId} title={title} message={message} confirmLabel={confirmLabel} tone={tone} onClose={() => setOpen(false)} />, document.body)}
     </form>
   );
 }
 
-function ConfirmDialog({ title, message, confirmLabel, tone, onClose }: { title: string; message: string; confirmLabel: string; tone: Tone; onClose: () => void }) {
+function ConfirmDialog({ formId, title, message, confirmLabel, tone, onClose }: { formId: string; title: string; message: string; confirmLabel: string; tone: Tone; onClose: () => void }) {
   const titleId = useId();
   const messageId = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -66,7 +68,7 @@ function ConfirmDialog({ title, message, confirmLabel, tone, onClose }: { title:
         </div>
         <div className="mt-6 flex flex-wrap justify-end gap-3">
           <button ref={cancelRef} type="button" disabled={pending} onClick={onClose} className="btn btn-ghost">انصراف</button>
-          <button type="submit" disabled={pending} className={`btn ${tone === "danger" ? "bg-red-600 text-white hover:bg-red-700" : "btn-primary"}`}>
+          <button type="submit" form={formId} disabled={pending} className={`btn ${tone === "danger" ? "bg-red-600 text-white hover:bg-red-700" : "btn-primary"}`}>
             {pending && <Loader2 size={16} className="animate-spin" aria-hidden />}
             {confirmLabel}
           </button>
