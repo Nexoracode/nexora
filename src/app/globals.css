@@ -165,30 +165,42 @@ button.input {
   .logo-ring { animation: none; }
 }
 
-/* EXORA beside the logo's N: it fades in, then a band of light keeps sweeping across the letters. */
+/*
+ * EXORA beside the logo's N: each letter slides out from behind the N into place, then a band of light sweeps over them.
+ * Every letter paints its own slice (--s = its offset, --w = the word's width) of one shared gradient and one shared
+ * sweep, because clipping a gradient to text does not work through letters that are being transformed.
+ */
 .brand-wordmark {
   /* Nunito Black: every stroke ends in a round cap, like the soft corners of the logo's N. */
   font-family: "Nunito", var(--font-sans);
   font-weight: 900;
-  background:
-    linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.95) 50%, transparent 62%) 130% 0 / 260% 100% no-repeat,
-    linear-gradient(90deg, #22b8ff, #3b6bff 55%, #9b4dff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: brand-wordmark-in 0.7s ease-out 0.15s both, brand-wordmark-sweep 2.2s ease-in-out 0.9s infinite;
 }
 
-@keyframes brand-wordmark-in {
-  from { opacity: 0; transform: translateX(-10px); }
+.brand-letter {
+  display: inline-block;
+  color: transparent;
+  background:
+    linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.95) 50%, transparent 62%) calc(var(--w) * -1.9 - var(--s)) 0 / calc(var(--w) * 3) 100% no-repeat,
+    linear-gradient(90deg, #22b8ff, #3b6bff 55%, #9b4dff) calc(var(--s) * -1) 0 / var(--w) 100% no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation:
+    brand-letter-out 0.9s cubic-bezier(0.22, 0.9, 0.3, 1.12) calc(0.15s + var(--i) * 0.11s) both,
+    brand-sweep 2.2s ease-in-out 1.7s infinite;
+}
+
+@keyframes brand-letter-out {
+  from { opacity: 0; transform: translateX(calc(var(--from) * -1)) scale(0.6); }
+  35% { opacity: 0; }
+  60% { opacity: 1; }
   to { opacity: 1; transform: none; }
 }
 
-@keyframes brand-wordmark-sweep {
-  from { background-position: 130% 0, 0 0; }
-  to { background-position: -30% 0, 0 0; }
+@keyframes brand-sweep {
+  from { background-position: calc(var(--w) * -1.9 - var(--s)) 0, calc(var(--s) * -1) 0; }
+  to { background-position: calc(var(--w) * -0.1 - var(--s)) 0, calc(var(--s) * -1) 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand-wordmark { animation: none; background: linear-gradient(90deg, #22b8ff, #3b6bff 55%, #9b4dff); -webkit-background-clip: text; background-clip: text; }
+  .brand-letter { animation: none; }
 }
