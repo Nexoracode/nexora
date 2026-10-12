@@ -421,7 +421,7 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
 
                 {busy && (
                   <div className="flex items-center gap-3 text-sm text-[#7a8196]" aria-live="polite">
-                    <Sparkles size={20} className="animate-pulse text-brand" aria-hidden />
+                    <Logo size={20} spinning className="m-1.5" />
                     <span key={activity ?? "thinking"} className="chat-shimmer">{activity ? `در حال استفاده از «${activity}»…` : "در حال فکر کردن…"}</span>
                     <span className="text-xs text-[#8b92a6]" dir="rtl">({formatElapsed(elapsed)}{tokens > 0 ? ` · ↓ ${tokens.toLocaleString("fa-IR")} توکن` : ""})</span>
                   </div>
