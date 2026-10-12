@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
       try {
         const result = await runChat(messages as ChatMessage[], decisions, {
           onTool: (label) => emit({ type: "tool", label }),
+          onSwitch: (model) => emit({ type: "model", model }),
           // Every few chunks is enough for a counter the eye can follow.
           onTokens: (total) => total % 4 === 0 && emit({ type: "tokens", total }),
         });

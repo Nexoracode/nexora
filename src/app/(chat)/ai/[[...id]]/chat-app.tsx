@@ -129,6 +129,8 @@ export function ChatApp({ enabled, ownerName }: { enabled: boolean; ownerName: s
   const [busy, setBusy] = useState(false);
   const [activity, setActivity] = useState<string | null>(null);
   const [tokens, setTokens] = useState(0);
+  // Set when the main model was busy and a backup answered instead.
+  const [switchedTo, setSwitchedTo] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -147,6 +149,7 @@ export function ChatApp({ enabled, ownerName }: { enabled: boolean; ownerName: s
     const startedAt = Date.now();
     setElapsed(0);
     setTokens(0);
+    setSwitchedTo(null);
     const timer = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 1000);
     return () => clearInterval(timer);
   }, [busy]);
@@ -292,6 +295,8 @@ export function ChatApp({ enabled, ownerName }: { enabled: boolean; ownerName: s
             if (activeRef.current === id) setActivity(event.label);
           } else if (event.type === "tokens") {
             if (activeRef.current === id) setTokens(event.total);
+          } else if (event.type === "model") {
+            if (activeRef.current === id) setSwitchedTo(event.model);
           } else if (event.type === "error") throw new Error(event.message);
           else if (event.type === "done") data = event;
         }
@@ -452,6 +457,7 @@ export function ChatApp({ enabled, ownerName }: { enabled: boolean; ownerName: s
                   <div className="flex items-center gap-3 text-sm text-[#7a8196]" aria-live="polite">
                     <Logo size={16} spinning className="m-1" />
                     <span key={activity ?? "thinking"} className="chat-shimmer">{activity ? `در حال استفاده از «${activity}»…` : "در حال فکر کردن…"}</span>
+                    {switchedTo && <span className="text-xs text-[#7a8196]" dir="ltr">· {switchedTo}</span>}
                     <span className="text-xs text-[#8b92a6]" dir="rtl">({formatElapsed(elapsed)}{tokens > 0 ? ` · ↓ ${tokens.toLocaleString("fa-IR")} توکن` : ""})</span>
                   </div>
                 )}

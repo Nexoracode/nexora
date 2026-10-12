@@ -15,6 +15,8 @@ const schema = z.object({
   // HTTP proxy for the model requests only (a VPN client's local proxy, e.g. http://127.0.0.1:10808), for when the server itself
   // is not behind the VPN. Unset = direct.
   AI_PROXY_URL: z.preprocess((value) => (value === "" ? undefined : value), z.url().optional()),
+  // Other chat models to try, in order, when the main one is rate-limited or unavailable (comma separated, same provider).
+  AI_FALLBACK_MODELS: z.string().default(""),
   AI_BASE_URL: z.url().default("https://api.deepseek.com"),
   // The owner's first name, used to greet them on the assistant page ("سلام محمد، شب بخیر"). Unset greets without a name.
   OWNER_NAME: z.preprocess((value) => (value === "" ? undefined : value), z.string().max(40).optional()),
@@ -38,6 +40,8 @@ const aiLocal = ["localhost", "127.0.0.1", "[::1]"].includes(aiHost);
 export const ai = {
   key: aiKey,
   enabled: Boolean(aiKey) || aiLocal,
+  /** The main model first, then the fallbacks. */
+  models: [env.AI_MODEL, ...env.AI_FALLBACK_MODELS.split(",").map((m) => m.trim()).filter(Boolean)].filter((m, i, all) => all.indexOf(m) === i),
   /** Only DeepSeek understands the `thinking` switch; other providers reject unknown fields. */
   deepseek: aiHost.endsWith("deepseek.com"),
 };

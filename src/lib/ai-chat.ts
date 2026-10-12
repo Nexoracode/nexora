@@ -109,25 +109,60 @@ async function readStream(body: ReadableStream<Uint8Array>, onChunks?: OnChunks)
   return { message: { content, tool_calls: toolCalls.length ? toolCalls : undefined }, finish };
 }
 
-async function callModel(messages: ChatMessage[], onChunks?: OnChunks): Promise<ModelReply> {
-  // Thinking mode would require sending reasoning_content back with every tool turn; a plain tool loop is faster and cheaper.
-  const body = JSON.stringify({ model: env.AI_MODEL, messages: [{ role: "system", content: SYSTEM }, ...messages.map((m) => (m.role === "assistant" && !m.content && !m.tool_calls ? { ...m, content: "-" } : m))], tools: apiTools(), ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}), temperature: 0.2, max_tokens: 4096, stream: true });
-  let response: Response;
-  // A 429 arrives before any output, so it is safe to wait (honouring Retry-After) and send the same request again.
-  for (let attempt = 0; ; attempt++) {
-    response = await modelFetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
-      method: "POST",
-      headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
-      body,
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      cache: "no-store",
-    });
-    if (response.status !== 429 || attempt >= RATE_LIMIT_RETRIES) break;
-    const retryAfter = Number(response.headers.get("retry-after"));
-    const waitMs = Math.min(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2000 * 2 ** attempt, 15_000);
-    await response.body?.cancel().catch(() => {});
+/** Statuses that mean "this model cannot answer right now": rate limited, overloaded or gone. The next model is tried instead. */
+const SWITCH_STATUSES = new Set([429, 503, 404]);
+const cooldownUntil = new Map<string, number>();
+export const resetModelCooldowns = () => cooldownUntil.clear();
+
+/**
+ * Sends one chat request. If the model is rate limited (or overloaded / retired) the next model of AI_FALLBACK_MODELS is
+ * used straight away, so the owner gets an answer instead of an error; a model that just failed is skipped for a while.
+ * Only when every model is busy does it wait (honouring Retry-After) and go round again. Such statuses arrive before any
+ * output, so re-sending is safe.
+ */
+async function requestModel(makeBody: (model: string) => string, timeoutMs: number, onSwitch?: (model: string) => void): Promise<{ response: Response; model: string }> {
+  const url = `${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`;
+  let last: { response: Response; model: string } | undefined;
+  for (let round = 0; round <= RATE_LIMIT_RETRIES; round++) {
+    const now = Date.now();
+    const ready = ai.models.filter((m) => (cooldownUntil.get(m) ?? 0) <= now);
+    // When every model is cooling down, still try the one that frees up first.
+    const candidates = ready.length ? ready : [[...ai.models].sort((x, y) => (cooldownUntil.get(x) ?? 0) - (cooldownUntil.get(y) ?? 0))[0]];
+    let waitMs = 2000 * 2 ** round;
+    for (const model of candidates) {
+      const response = await modelFetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
+        body: makeBody(model),
+        signal: AbortSignal.timeout(timeoutMs),
+        cache: "no-store",
+      });
+      if (!SWITCH_STATUSES.has(response.status)) {
+        if (model !== ai.models[0]) onSwitch?.(model);
+        return { response, model };
+      }
+      const retryAfter = Number(response.headers.get("retry-after"));
+      const coolMs = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : response.status === 429 ? 20_000 : 60_000;
+      cooldownUntil.set(model, Date.now() + Math.min(coolMs, 120_000));
+      waitMs = Math.min(Math.max(coolMs, 1000), 15_000);
+      await last?.response.body?.cancel().catch(() => {});
+      last = { response, model };
+      console.warn("[ai-chat] model unavailable", model, response.status, ai.models.length > 1 ? "- trying the next one" : "");
+    }
+    if (round === RATE_LIMIT_RETRIES) break;
     await new Promise((resolve) => setTimeout(resolve, waitMs));
   }
+  return last!;
+}
+
+async function callModel(messages: ChatMessage[], onChunks?: OnChunks, onSwitch?: (model: string) => void): Promise<ModelReply> {
+  // Thinking mode would require sending reasoning_content back with every tool turn; a plain tool loop is faster and cheaper.
+  const history = [{ role: "system", content: SYSTEM }, ...messages.map((m) => (m.role === "assistant" && !m.content && !m.tool_calls ? { ...m, content: "-" } : m))];
+  const { response } = await requestModel(
+    (model) => JSON.stringify({ model, messages: history, tools: apiTools(), ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}), temperature: 0.2, max_tokens: 4096, stream: true }),
+    REQUEST_TIMEOUT_MS,
+    onSwitch,
+  );
   if (response.status === 401 || response.status === 403) {
     // 403 is also what providers answer for a blocked network/region (VPN, proxy), so keep the real reason in the log.
     console.error("[ai-chat] model auth error", response.status, (await response.text().catch(() => "")).slice(0, 300));
@@ -149,25 +184,23 @@ async function callModel(messages: ChatMessage[], onChunks?: OnChunks): Promise<
 /** A short Persian title for a conversation, written by the model from its first exchange; null when it cannot. */
 export async function generateTitle(userText: string, replyText: string): Promise<string | null> {
   try {
-    const response = await modelFetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
-      method: "POST",
-      headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
-      // Reasoning models spend tokens thinking before they answer, so the budget is far above the title's length.
-      body: JSON.stringify({
-        model: env.AI_MODEL,
-        messages: [
-          { role: "system", content: "Write a very short title (2 to 5 words, in Persian) for the chat below. Reply with the title only: no quotes, no trailing punctuation." },
-          { role: "user", content: `User: ${userText.slice(0, 500)}
+    const { response } = await requestModel(
+      (model) =>
+        JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: "Write a very short title (2 to 5 words, in Persian) for the chat below. Reply with the title only: no quotes, no trailing punctuation." },
+            { role: "user", content: `User: ${userText.slice(0, 500)}
 
 Assistant: ${replyText.slice(0, 500)}` },
-        ],
-        ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}),
-        temperature: 0.3,
-        max_tokens: 400,
-      }),
-      signal: AbortSignal.timeout(20_000),
-      cache: "no-store",
-    });
+          ],
+          ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}),
+          temperature: 0.3,
+          // Reasoning models spend tokens thinking before they answer, so the budget is far above the title's length.
+          max_tokens: 400,
+        }),
+      20_000,
+    );
     if (!response.ok) return null;
     const data = (await response.json()) as { choices?: { message?: { content?: string | null } }[] };
     const title = data.choices?.[0]?.message?.content?.replace(/["«»“”'`*#]/g, "").replace(/\s+/g, " ").trim().replace(/[.:،؛!؟?]+$/, "");
@@ -184,8 +217,8 @@ Assistant: ${replyText.slice(0, 500)}` },
  * the label of each tool just before it runs, and `hooks.onTokens` the running output-token estimate while the
  * model writes, so the page can show what the assistant is doing.
  */
-export async function runChat(history: ChatMessage[], decisions: Record<string, Decision>, hooks: { onTool?: (label: string) => void; onTokens?: (total: number) => void } = {}): Promise<ChatResult> {
-  const { onTool, onTokens } = hooks;
+export async function runChat(history: ChatMessage[], decisions: Record<string, Decision>, hooks: { onTool?: (label: string) => void; onTokens?: (total: number) => void; onSwitch?: (model: string) => void } = {}): Promise<ChatResult> {
+  const { onTool, onTokens, onSwitch } = hooks;
   let tokens = 0;
   if (!ai.enabled) throw new ApiError(503, "AI_API_KEY تنظیم نشده است.");
   const messages = [...history];
@@ -221,7 +254,7 @@ export async function runChat(history: ChatMessage[], decisions: Record<string, 
     const reply = await callModel(messages, (count) => {
       tokens = stepStart + count;
       onTokens?.(tokens);
-    });
+    }, onSwitch);
     messages.push({ role: "assistant", content: reply.message.content, ...(reply.message.tool_calls ? { tool_calls: reply.message.tool_calls } : {}) });
     if (reply.finish === "content_filter") return { messages, pending: [], notice: "پاسخ توسط فیلتر مدل حذف شد." };
     if (reply.finish === "length") return { messages, pending: [], notice: "پاسخ ناقص ماند؛ درخواست را کوتاه‌تر بپرسید." };

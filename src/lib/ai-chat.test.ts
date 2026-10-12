@@ -8,8 +8,9 @@ Object.assign(process.env, {
   OWNER_PASSWORD: "x",
   SESSION_SECRET: "s".repeat(40),
   DEEPSEEK_API_KEY: "test-key-123456",
+  AI_FALLBACK_MODELS: "backup-model-1, backup-model-2",
 });
-const { runChat } = await import("./ai-chat");
+const { runChat, resetModelCooldowns } = await import("./ai-chat");
 
 type Reply = { content?: string | null; tool_calls?: { id: string; type: "function"; function: { name: string; arguments: string } }[]; finish?: string };
 
@@ -74,4 +75,40 @@ test("an unknown tool name is refused", async () => {
   const result = await runChat([{ role: "user", content: "حذف" }], {});
   const toolMessage = result.messages.find((m) => m.role === "tool");
   assert.match(String(toolMessage?.content), /unknown tool/);
+});
+
+/** A fetch that answers 200 with "ok" except for the models in `failing`, which get that status. */
+function modelsThatFail(failing: Record<string, number>) {
+  const called: string[] = [];
+  globalThis.fetch = (async (_url: unknown, init: RequestInit) => {
+    const model = JSON.parse(String(init.body)).model as string;
+    called.push(model);
+    if (failing[model]) return new Response("{}", { status: failing[model], headers: { "retry-after": "30" } });
+    return new Response(JSON.stringify({ choices: [{ message: { content: "ok" }, finish_reason: "stop" }] }), { status: 200 });
+  }) as typeof fetch;
+  return called;
+}
+
+test("a rate-limited model is replaced by the next one and skipped while it cools down", async () => {
+  resetModelCooldowns();
+  const called = modelsThatFail({ "deepseek-flash": 429 });
+  const switched: string[] = [];
+  const first = await runChat(ask, {}, { onSwitch: (model) => switched.push(model) });
+  assert.equal(first.messages.at(-1)?.content, "ok");
+  assert.deepEqual(called, ["deepseek-flash", "backup-model-1"]);
+  assert.deepEqual(switched, ["backup-model-1"]);
+
+  called.length = 0;
+  await runChat(ask, {});
+  assert.deepEqual(called, ["backup-model-1"], "the main model is not asked again while it cools down");
+  resetModelCooldowns();
+});
+
+test("the chain goes on when a backup is limited too, and a retired model (404) counts as unavailable", async () => {
+  resetModelCooldowns();
+  const called = modelsThatFail({ "deepseek-flash": 404, "backup-model-1": 429 });
+  const result = await runChat(ask, {});
+  assert.equal(result.messages.at(-1)?.content, "ok");
+  assert.deepEqual(called, ["deepseek-flash", "backup-model-1", "backup-model-2"]);
+  resetModelCooldowns();
 });
