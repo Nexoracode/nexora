@@ -362,7 +362,7 @@ export function ChatApp({ enabled, ownerName }: { enabled: boolean; ownerName: s
 
       <aside className={`fixed inset-y-0 start-0 z-40 flex w-72 flex-col border-e border-[#dfe2ee] bg-[#eceef7] transition-transform lg:static lg:translate-x-0 ${sidebar ? "translate-x-0" : "max-lg:translate-x-full"}`}>
         <div className="flex items-center justify-between px-4 pb-2 pt-4">
-          <span className="flex items-center gap-2.5 text-lg font-bold"><Logo size={28} />دستیار نکسورا</span>
+          <span className="flex items-center gap-2.5 text-lg font-bold"><Logo size={22} />دستیار نکسورا</span>
           <button type="button" className="rounded-lg p-1.5 text-[#5b6275] hover:bg-[#dfe2ee] lg:hidden" onClick={() => setSidebar(false)} aria-label="بستن"><PanelRightClose size={18} aria-hidden /></button>
         </div>
         <div className="px-3 py-2">
