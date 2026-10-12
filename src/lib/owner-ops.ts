@@ -175,8 +175,8 @@ const updateFeature: Handler = async ({ params: [key], body }) => {
 };
 
 const listPackages: Handler = async () => {
-  const rows = await db.package.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, price: true, features: { select: { featureKey: true } } } });
-  return { packages: rows.map(({ price, features, ...p }) => ({ ...p, price: num(price), featureKeys: features.map((f) => f.featureKey) })) };
+  const rows = await db.package.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, price: true, features: { select: { featureKey: true, feature: { select: { title: true } } } } } });
+  return { packages: rows.map(({ price, features, ...p }) => ({ ...p, price: num(price), featureKeys: features.map((f) => f.featureKey), features: features.map((f) => ({ key: f.featureKey, title: f.feature.title })) })) };
 };
 
 const createPackage: Handler = async ({ body }) => {
