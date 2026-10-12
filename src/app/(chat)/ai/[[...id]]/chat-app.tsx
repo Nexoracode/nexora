@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import { ArrowRight, ArrowUp, Check, Copy, Loader2, Menu, PanelRightClose, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { conversationTitle, type ChatMessage, type PendingCall } from "@/lib/ai-chat-types";
+import { Logo } from "@/components/logo";
 import { MarkdownText } from "./markdown";
 import { ToolCards } from "./tool-cards";
 
@@ -350,7 +351,7 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
 
       <aside className={`fixed inset-y-0 start-0 z-40 flex w-72 flex-col border-e border-[#dfe2ee] bg-[#eceef7] transition-transform lg:static lg:translate-x-0 ${sidebar ? "translate-x-0" : "max-lg:translate-x-full"}`}>
         <div className="flex items-center justify-between px-4 pb-2 pt-4">
-          <span className="flex items-center gap-2 text-lg font-bold"><Sparkles size={20} className="text-brand" aria-hidden />دستیار نکسورا</span>
+          <span className="flex items-center gap-2.5 text-lg font-bold"><Logo size={28} />دستیار نکسورا</span>
           <button type="button" className="rounded-lg p-1.5 text-[#5b6275] hover:bg-[#dfe2ee] lg:hidden" onClick={() => setSidebar(false)} aria-label="بستن"><PanelRightClose size={18} aria-hidden /></button>
         </div>
         <div className="px-3 py-2">
@@ -380,7 +381,7 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
         {empty ? (
           <div className="flex flex-1 flex-col items-center justify-center px-4 pb-16">
             <div className="w-full max-w-4xl">
-              <h1 className="mb-8 flex items-center justify-center gap-3 text-3xl font-medium"><Sparkles size={30} className="text-brand" aria-hidden />چطور می‌توانم کمکتان کنم؟</h1>
+              <h1 className="mb-8 flex items-center justify-center gap-3 text-3xl font-medium"><Logo size={40} />چطور می‌توانم کمکتان کنم؟</h1>
               <Composer text={text} setText={setText} onSubmit={() => submit()} disabled={false} busy={busy} placeholder={placeholder} inputRef={inputRef} />
               {error && <p role="alert" className="mt-3 text-center text-sm text-red-600">{error}</p>}
               <div className="mt-4 flex flex-wrap justify-center gap-2">

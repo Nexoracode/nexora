@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Boxes, Bot, Globe, Inbox, LifeBuoy, LogOut, MessageSquare, Menu, Package, SlidersHorizontal, Star, Wallet, X } from "lucide-react";
+import { Bot, Globe, Inbox, LifeBuoy, LogOut, MessageSquare, Menu, Package, SlidersHorizontal, Star, Wallet, X } from "lucide-react";
 import { logoutAction } from "@/app/actions";
+import { Logo } from "@/components/logo";
 import { SubmitButton } from "@/components/ui";
 
 const groups = [
@@ -54,7 +55,7 @@ export function Sidebar({ pendingRequests, openTickets, pendingTopups }: { pendi
   return (
     <>
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
-        <span className="flex items-center gap-2 font-bold"><Boxes size={20} className="text-brand" aria-hidden />نکسورا</span>
+        <span className="flex items-center gap-2 font-bold"><Logo size={26} />نکسورا</span>
         <button type="button" aria-label={open ? "بستن منو" : "باز کردن منو"} aria-expanded={open} className="btn btn-ghost !px-2.5" onClick={() => setOpen((value) => !value)}>
           {open ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
         </button>
@@ -66,7 +67,7 @@ export function Sidebar({ pendingRequests, openTickets, pendingTopups }: { pendi
         className={`fixed inset-y-0 end-auto start-0 z-40 flex w-64 flex-col border-e border-slate-200 bg-white transition-transform lg:translate-x-0 ${open ? "translate-x-0" : "max-lg:translate-x-full"}`}
         aria-label="منوی اصلی"
       >
-        <div className="flex items-center gap-2 px-5 py-5 text-lg font-bold"><Boxes size={22} className="text-brand" aria-hidden />نکسورا</div>
+        <div className="flex items-center gap-2 px-5 py-5 text-lg font-bold"><Logo size={30} />نکسورا</div>
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-3">
           {groups.map((group) => (
             <div key={group.title} role="group" aria-label={group.title} className="space-y-1">
