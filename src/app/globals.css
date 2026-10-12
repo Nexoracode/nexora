@@ -219,3 +219,13 @@ button.input {
 @media (prefers-reduced-motion: reduce) {
   .brand-letter { animation: none; }
 }
+
+/* EXORA beside the logo's N, at rest: the same face and gradient as the loading screen's wordmark. */
+.brand-wordmark-static {
+  font-family: "Nunito", var(--font-sans);
+  font-weight: 900;
+  background: linear-gradient(90deg, #22b8ff, #3b6bff 55%, #9b4dff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
