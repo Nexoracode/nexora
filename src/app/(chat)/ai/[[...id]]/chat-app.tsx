@@ -274,35 +274,52 @@ export function ChatApp({ enabled, ownerName }: { enabled: boolean; ownerName: s
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch("/api/ai/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages: history, decisions }) });
-      if (!response.ok || !response.body) {
-        const failure = await response.json().catch(() => null);
-        throw new Error(failure?.message ?? "خطا در ارتباط با دستیار.");
-      }
-      // The server reports each tool as it starts, then sends the final result as the last line.
-      let data: (ChatResult & { type: "done" }) | null = null;
-      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-      let buffer = "";
-      for (;;) {
-        const { value, done } = await reader.read();
-        buffer += value ?? "";
-        const lines = buffer.split(String.fromCharCode(10));
-        buffer = done ? "" : (lines.pop() ?? "");
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          const event = JSON.parse(line);
-          if (event.type === "tool") {
-            if (activeRef.current === id) setActivity(event.label);
-          } else if (event.type === "tokens") {
-            if (activeRef.current === id) setTokens(event.total);
-          } else if (event.type === "model") {
-            if (activeRef.current === id) setSwitchedTo(event.model);
-          } else if (event.type === "error") throw new Error(event.message);
-          else if (event.type === "done") data = event;
+      // One request, read as it streams. Connection trouble (a dropped stream, a proxy cutting it) shows up as a TypeError
+      // ("network error") or as a stream that ends without a result.
+      const attempt = async (): Promise<ChatResult & { type: "done" }> => {
+        const response = await fetch("/api/ai/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages: history, decisions }) });
+        if (!response.ok || !response.body) {
+          const failure = await response.json().catch(() => null);
+          throw new Error(failure?.message ?? "خطا در ارتباط با دستیار.");
         }
-        if (done) break;
+        // The server reports each tool as it starts, then sends the final result as the last line.
+        let result: (ChatResult & { type: "done" }) | null = null;
+        const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+        let buffer = "";
+        for (;;) {
+          const { value, done } = await reader.read();
+          buffer += value ?? "";
+          const lines = buffer.split(String.fromCharCode(10));
+          buffer = done ? "" : (lines.pop() ?? "");
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            const event = JSON.parse(line);
+            if (event.type === "tool") {
+              if (activeRef.current === id) setActivity(event.label);
+            } else if (event.type === "tokens") {
+              if (activeRef.current === id) setTokens(event.total);
+            } else if (event.type === "model") {
+              if (activeRef.current === id) setSwitchedTo(event.model);
+            } else if (event.type === "error") throw new Error(event.message);
+            else if (event.type === "done") result = event;
+          }
+          if (done) break;
+        }
+        if (!result) throw new TypeError("the stream ended without a result");
+        return result;
+      };
+
+      // A dropped connection is retried once, but only when nothing was approved in this request: re-sending an approved
+      // write could run it twice.
+      const mayResend = !Object.values(decisions).includes("approve");
+      let data: ChatResult & { type: "done" };
+      try {
+        data = await attempt();
+      } catch (e) {
+        if (!(e instanceof TypeError) || !mayResend) throw e;
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        data = await attempt();
       }
-      if (!data) throw new Error("پاسخی از دستیار دریافت نشد.");
       const saved = await persist(id, data.messages, data.pending);
       const asked = data.messages.filter((m: ChatMessage) => m.role === "user").length;
       if (saved && asked === 1 && data.pending.length === 0) void nameConversation(id);
@@ -312,7 +329,18 @@ export function ChatApp({ enabled, ownerName }: { enabled: boolean; ownerName: s
       setPending(data.pending);
       if (data.notice) setError(data.notice);
     } catch (e) {
-      if (activeRef.current === id) setError(e instanceof Error ? e.message : "خطا در ارتباط با دستیار.");
+      if (activeRef.current === id) {
+        const approved = Object.values(decisions).includes("approve");
+        setError(
+          e instanceof TypeError
+            ? approved
+              ? "ارتباط با سرور قطع شد. ممکن است اقدام تأییدشده انجام شده باشد؛ وضعیت را در پنل بررسی کنید."
+              : "ارتباط با سرور قطع شد؛ دوباره تلاش کنید."
+            : e instanceof Error
+              ? e.message
+              : "خطا در ارتباط با دستیار.",
+        );
+      }
     } finally {
       setBusy(false);
       setActivity(null);

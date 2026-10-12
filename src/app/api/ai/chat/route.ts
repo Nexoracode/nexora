@@ -29,6 +29,8 @@ export async function POST(request: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       const emit = (event: unknown) => controller.enqueue(encoder.encode(JSON.stringify(event) + String.fromCharCode(10)));
+      // A line every few seconds keeps proxies and the host from treating a long wait (a busy model) as an idle connection.
+      const heartbeat = setInterval(() => emit({ type: "ping" }), 8000);
       try {
         const result = await runChat(messages as ChatMessage[], decisions, {
           onTool: (label) => emit({ type: "tool", label }),
@@ -45,6 +47,7 @@ export async function POST(request: NextRequest) {
           emit({ type: "error", message: "خطای داخلی." });
         }
       } finally {
+        clearInterval(heartbeat);
         controller.close();
       }
     },

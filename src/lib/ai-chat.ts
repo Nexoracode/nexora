@@ -13,6 +13,9 @@ const RATE_LIMIT_RETRIES = 4;
 const SHOWN_AS_CARD = new Set(["nexora_summary", "list_sites", "get_site", "site_wallet", "list_features", "list_packages", "list_purchases", "list_topups", "list_ratings", "get_ticket", "list_tickets"]);
 const MAX_RESULT_CHARS = 20_000;
 const REQUEST_TIMEOUT_MS = 50_000;
+// The route may run for 60s on the host; one chat request stops starting new work after this, and ends with a clear message instead of a dropped connection.
+const TOTAL_BUDGET_MS = 52_000;
+const MIN_STEP_MS = 9_000;
 
 const SYSTEM = `You are the assistant inside the owner's panel of Nexora, a license and sales panel for customer websites.
 You help the owner look things up and manage sites, wallets, the feature catalog, packages, purchase requests, wallet top-ups and support tickets, using your tools.
@@ -120,7 +123,7 @@ export const resetModelCooldowns = () => cooldownUntil.clear();
  * Only when every model is busy does it wait (honouring Retry-After) and go round again. Such statuses arrive before any
  * output, so re-sending is safe.
  */
-async function requestModel(makeBody: (model: string) => string, timeoutMs: number, onSwitch?: (model: string) => void): Promise<{ response: Response; model: string }> {
+async function requestModel(makeBody: (model: string) => string, timeoutMs: number, onSwitch?: (model: string) => void, deadline = Infinity): Promise<{ response: Response; model: string }> {
   const url = `${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`;
   let last: { response: Response; model: string } | undefined;
   for (let round = 0; round <= RATE_LIMIT_RETRIES; round++) {
@@ -130,11 +133,14 @@ async function requestModel(makeBody: (model: string) => string, timeoutMs: numb
     const candidates = ready.length ? ready : [[...ai.models].sort((x, y) => (cooldownUntil.get(x) ?? 0) - (cooldownUntil.get(y) ?? 0))[0]];
     let waitMs = 2000 * 2 ** round;
     for (const model of candidates) {
+      const remaining = deadline - Date.now();
+      // Out of time: keep what we have rather than start something the host would cut off.
+      if (remaining < 4000 && last) break;
       const response = await modelFetch(url, {
         method: "POST",
         headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
         body: makeBody(model),
-        signal: AbortSignal.timeout(timeoutMs),
+        signal: AbortSignal.timeout(Math.max(1000, Math.min(timeoutMs, remaining))),
         cache: "no-store",
       });
       if (!SWITCH_STATUSES.has(response.status)) {
@@ -149,19 +155,20 @@ async function requestModel(makeBody: (model: string) => string, timeoutMs: numb
       last = { response, model };
       console.warn("[ai-chat] model unavailable", model, response.status, ai.models.length > 1 ? "- trying the next one" : "");
     }
-    if (round === RATE_LIMIT_RETRIES) break;
+    if (round === RATE_LIMIT_RETRIES || Date.now() + waitMs > deadline - 4000) break;
     await new Promise((resolve) => setTimeout(resolve, waitMs));
   }
   return last!;
 }
 
-async function callModel(messages: ChatMessage[], onChunks?: OnChunks, onSwitch?: (model: string) => void): Promise<ModelReply> {
+async function callModel(messages: ChatMessage[], onChunks?: OnChunks, onSwitch?: (model: string) => void, deadline?: number): Promise<ModelReply> {
   // Thinking mode would require sending reasoning_content back with every tool turn; a plain tool loop is faster and cheaper.
   const history = [{ role: "system", content: SYSTEM }, ...messages.map((m) => (m.role === "assistant" && !m.content && !m.tool_calls ? { ...m, content: "-" } : m))];
   const { response } = await requestModel(
     (model) => JSON.stringify({ model, messages: history, tools: apiTools(), ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}), temperature: 0.2, max_tokens: 4096, stream: true }),
     REQUEST_TIMEOUT_MS,
     onSwitch,
+    deadline,
   );
   if (response.status === 401 || response.status === 403) {
     // 403 is also what providers answer for a blocked network/region (VPN, proxy), so keep the real reason in the log.
@@ -222,6 +229,7 @@ export async function runChat(history: ChatMessage[], decisions: Record<string, 
   let tokens = 0;
   if (!ai.enabled) throw new ApiError(503, "AI_API_KEY تنظیم نشده است.");
   const messages = [...history];
+  const deadline = Date.now() + TOTAL_BUDGET_MS;
 
   for (let step = 0; step < MAX_STEPS; step++) {
     const last = messages.at(-1);
@@ -250,11 +258,14 @@ export async function runChat(history: ChatMessage[], decisions: Record<string, 
       continue;
     }
 
+    // Tools have already run in this request and there is no time for another model turn: stop cleanly; the owner can say "continue".
+    if (messages.length > history.length && deadline - Date.now() < MIN_STEP_MS) return { messages, pending: [], notice: "زمان پاسخ‌گویی این درخواست تمام شد؛ بنویسید «ادامه بده»." };
+
     const stepStart = tokens;
     const reply = await callModel(messages, (count) => {
       tokens = stepStart + count;
       onTokens?.(tokens);
-    }, onSwitch);
+    }, onSwitch, deadline);
     messages.push({ role: "assistant", content: reply.message.content, ...(reply.message.tool_calls ? { tool_calls: reply.message.tool_calls } : {}) });
     if (reply.finish === "content_filter") return { messages, pending: [], notice: "پاسخ توسط فیلتر مدل حذف شد." };
     if (reply.finish === "length") return { messages, pending: [], notice: "پاسخ ناقص ماند؛ درخواست را کوتاه‌تر بپرسید." };
