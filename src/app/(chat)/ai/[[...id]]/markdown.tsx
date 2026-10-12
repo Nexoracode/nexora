@@ -1,12 +1,8 @@
 import { Children, isValidElement, type ReactNode } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { isStatusWord, statusChips, statusPattern, type StatusWord } from "@/lib/ai-status";
-
-function StatusChip({ word }: { word: StatusWord }) {
-  const chip = statusChips[word];
-  return <span className={`mx-0.5 inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 align-middle text-xs font-medium leading-5 ${chip.className}`}>{chip.label}</span>;
-}
+import { isStatusWord, statusPattern } from "@/lib/ai-status";
+import { StatusChip } from "./status-chip";
 
 /** Turns status words (OPEN, APPROVED...) inside text into Persian colour chips, leaving everything else alone. */
 function chipify(children: ReactNode): ReactNode {

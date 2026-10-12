@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObjec
 import { ArrowRight, ArrowUp, Check, Copy, Loader2, Menu, PanelRightClose, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { conversationTitle, type ChatMessage, type PendingCall } from "@/lib/ai-chat-types";
 import { MarkdownText } from "./markdown";
+import { ToolCards } from "./tool-cards";
 
 type Decisions = Record<string, "approve" | "reject">;
 type ChatResult = { messages: ChatMessage[]; pending: PendingCall[]; notice?: string };
@@ -396,7 +397,13 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
                 {loading && <div className="flex items-center gap-2 text-sm text-[#7a8196]"><Loader2 size={16} className="animate-spin" aria-hidden />در حال بارگذاری…</div>}
                 {messages.map((message, index) => {
                   if (message.role === "user") return <UserMessage key={index} text={message.content} />;
-                  if (message.role === "assistant") return <AssistantMessage key={index} message={message} />;
+                  if (message.role === "assistant")
+                    return (
+                      <div key={index} className="space-y-3">
+                        <ToolCards message={message} all={messages} />
+                        <AssistantMessage message={message} />
+                      </div>
+                    );
                   return null;
                 })}
 
