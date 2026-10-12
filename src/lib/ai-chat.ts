@@ -75,12 +75,44 @@ async function callModel(messages: ChatMessage[]): Promise<ModelReply> {
   return { message: { content: choice.message.content ?? "", tool_calls: choice.message.tool_calls?.length ? choice.message.tool_calls : undefined }, finish: choice.finish_reason ?? "stop" };
 }
 
+/** A short Persian title for a conversation, written by the model from its first exchange; null when it cannot. */
+export async function generateTitle(userText: string, replyText: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
+      // Reasoning models spend tokens thinking before they answer, so the budget is far above the title's length.
+      body: JSON.stringify({
+        model: env.AI_MODEL,
+        messages: [
+          { role: "system", content: "Write a very short title (2 to 5 words, in Persian) for the chat below. Reply with the title only: no quotes, no trailing punctuation." },
+          { role: "user", content: `User: ${userText.slice(0, 500)}
+
+Assistant: ${replyText.slice(0, 500)}` },
+        ],
+        ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}),
+        temperature: 0.3,
+        max_tokens: 400,
+      }),
+      signal: AbortSignal.timeout(20_000),
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as { choices?: { message?: { content?: string | null } }[] };
+    const title = data.choices?.[0]?.message?.content?.replace(/["«»“”'`*#]/g, "").replace(/\s+/g, " ").trim().replace(/[.:،؛!؟?]+$/, "");
+    return title ? title.slice(0, 80) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Advances the conversation as far as it can go without the owner: calls the model, runs read tools,
  * and stops at the first write tool that has no decision yet, returning it as `pending`. It is
- * stateless: the browser sends the whole conversation back with its decisions to continue.
+ * stateless: the browser sends the whole conversation back with its decisions to continue. `onTool` is told
+ * the label of each tool just before it runs, so the page can show what the assistant is doing.
  */
-export async function runChat(history: ChatMessage[], decisions: Record<string, Decision>): Promise<ChatResult> {
+export async function runChat(history: ChatMessage[], decisions: Record<string, Decision>, onTool?: (label: string) => void): Promise<ChatResult> {
   if (!ai.enabled) throw new ApiError(503, "AI_API_KEY تنظیم نشده است.");
   const messages = [...history];
 
@@ -98,7 +130,10 @@ export async function runChat(history: ChatMessage[], decisions: Record<string, 
         const def = toolByName.get(call.function.name);
         let content: string | null = null;
         if (!def) content = "Error: unknown tool.";
-        else if (!def.write || decisions[call.id] === "approve") content = (await execute(def, call.function.arguments)).content;
+        else if (!def.write || decisions[call.id] === "approve") {
+          onTool?.(def.label);
+          content = (await execute(def, call.function.arguments)).content;
+        }
         else if (decisions[call.id] === "reject") content = "The owner declined this action. Nothing was changed.";
         else pending.push({ id: call.id, name: def.name, label: def.label, input: safeJson(call.function.arguments) });
         if (content !== null) results.push({ role: "tool", tool_call_id: call.id, content });

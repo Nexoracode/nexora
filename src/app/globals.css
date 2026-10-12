@@ -133,3 +133,21 @@ button.input {
     animation: none;
   }
 }
+
+/* The assistant's "working on it" line: text with a light band sweeping across it. */
+.chat-shimmer {
+  background: linear-gradient(90deg, #7a8196 35%, #1f2330 50%, #7a8196 65%) 0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: chat-shimmer 1.8s linear infinite;
+}
+
+@keyframes chat-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-shimmer { animation: none; color: #5b6275; background: none; }
+}
