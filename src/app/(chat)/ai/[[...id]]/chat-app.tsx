@@ -13,7 +13,7 @@ type Decisions = Record<string, "approve" | "reject">;
 type ChatResult = { messages: ChatMessage[]; pending: PendingCall[]; notice?: string };
 type Summary = { id: string; title: string; updatedAt: string };
 
-const ACCENT = "bg-brand hover:bg-brand-dark";
+const ACCENT = "bg-gradient-to-br from-[#3b7bff] via-[#4f5cf0] to-[#7c5cf0] hover:brightness-90";
 const SUGGESTIONS = ["خلاصهٔ وضعیت پنل را بگو", "درخواست‌های خرید در انتظار را نشان بده", "تیکت‌های باز را مرور کن"];
 
 /** 7 ثانیه, then 1:05 once it passes a minute. */

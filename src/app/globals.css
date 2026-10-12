@@ -2,8 +2,21 @@
 
 @theme {
   --font-sans: "Vazirmatn", Tahoma, system-ui, sans-serif;
-  --color-brand: #4f46e5;
-  --color-brand-dark: #4338ca;
+  /* The Nexora logo's palette: cyan -> blue -> indigo -> violet. `brand` is its blue; indigo-* is remapped to the same family. */
+  --color-brand: #4361ee;
+  --color-brand-dark: #3651d4;
+  --color-brand-cyan: #22d3ee;
+  --color-brand-violet: #8b5cf6;
+  --color-indigo-50: #eef3ff;
+  --color-indigo-100: #dfe8ff;
+  --color-indigo-200: #c4d3ff;
+  --color-indigo-300: #9db6ff;
+  --color-indigo-400: #7490ff;
+  --color-indigo-500: #5675f8;
+  --color-indigo-600: #4361ee;
+  --color-indigo-700: #3651d4;
+  --color-indigo-800: #2d43a8;
+  --color-indigo-900: #283a80;
 }
 
 html {
@@ -84,13 +97,15 @@ button.input {
   cursor: not-allowed;
 }
 
+/* The primary button wears the logo's gradient: blue into violet. */
 .btn-primary {
-  background: var(--color-brand);
+  background: linear-gradient(135deg, #3b7bff 0%, #4f5cf0 55%, #7c5cf0 100%);
   color: #fff;
+  transition: filter 0.15s;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-brand-dark);
+  filter: brightness(0.92);
 }
 
 .btn-ghost {
