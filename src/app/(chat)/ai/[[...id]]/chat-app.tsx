@@ -400,7 +400,7 @@ export function ChatApp({ enabled, ownerName }: { enabled: boolean; ownerName: s
         {empty ? (
           <div className="flex flex-1 flex-col items-center justify-center px-4 pb-16">
             <div className="w-full max-w-4xl">
-              <h1 className="m-0 flex items-center justify-center gap-3 text-3xl font-medium"><Logo size={40} /><span className={hello ? "" : "invisible"}>{hello ?? "سلام"}</span></h1>
+              <h1 className="m-0 flex items-center justify-center gap-3 text-3xl font-medium"><Logo size={32} /><span className={hello ? "" : "invisible"}>{hello ?? "سلام"}</span></h1>
               <p className="mb-8 mt-3 text-center text-base text-[#7a8196]">چطور می‌تونم کمکت کنم؟</p>
               <Composer text={text} setText={setText} onSubmit={() => submit()} disabled={false} busy={busy} placeholder={placeholder} inputRef={inputRef} />
               {error && <p role="alert" className="mt-3 text-center text-sm text-red-600">{error}</p>}
