@@ -11,7 +11,9 @@ export function LoginForm() {
       <Field label="رمز عبور" htmlFor="password" error={state.error}>
         <input id="password" name="password" type="password" autoComplete="current-password" autoFocus maxLength={200} className="input" aria-invalid={state.error ? true : undefined} aria-describedby="password-msg" dir="ltr" />
       </Field>
-      <SubmitButton>ورود</SubmitButton>
+      <div className="[&>button]:w-full">
+        <SubmitButton>ورود</SubmitButton>
+      </div>
     </form>
   );
 }
