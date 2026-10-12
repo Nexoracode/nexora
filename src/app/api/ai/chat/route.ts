@@ -30,7 +30,11 @@ export async function POST(request: NextRequest) {
     async start(controller) {
       const emit = (event: unknown) => controller.enqueue(encoder.encode(JSON.stringify(event) + String.fromCharCode(10)));
       try {
-        const result = await runChat(messages as ChatMessage[], decisions, (label) => emit({ type: "tool", label }));
+        const result = await runChat(messages as ChatMessage[], decisions, {
+          onTool: (label) => emit({ type: "tool", label }),
+          // Every few chunks is enough for a counter the eye can follow.
+          onTokens: (total) => total % 4 === 0 && emit({ type: "tokens", total }),
+        });
         emit({ type: "done", ...result });
       } catch (error) {
         if (error instanceof ApiError) emit({ type: "error", message: error.message });

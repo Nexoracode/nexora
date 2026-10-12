@@ -12,6 +12,11 @@ type Summary = { id: string; title: string; updatedAt: string };
 const ACCENT = "bg-brand hover:bg-brand-dark";
 const SUGGESTIONS = ["خلاصهٔ وضعیت پنل را بگو", "درخواست‌های خرید در انتظار را نشان بده", "تیکت‌های باز را مرور کن"];
 
+/** 7 ثانیه, then 1:05 once it passes a minute. */
+function formatElapsed(seconds: number) {
+  if (seconds < 60) return `${seconds.toLocaleString("fa-IR")} ثانیه`;
+  return `${Math.floor(seconds / 60).toLocaleString("fa-IR")}:${String(seconds % 60).padStart(2, "0")}`.replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
+}
 const idFromPath = (path: string) => path.match(/^\/ai\/([A-Za-z0-9-]{8,64})\/?$/)?.[1] ?? null;
 const newId = () =>
   typeof crypto.randomUUID === "function"
@@ -113,6 +118,8 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [activity, setActivity] = useState<string | null>(null);
+  const [tokens, setTokens] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sidebar, setSidebar] = useState(false);
@@ -120,6 +127,16 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
   const titled = useRef(new Set<string>());
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Seconds since the current request started, shown next to the token count.
+  useEffect(() => {
+    if (!busy) return;
+    const startedAt = Date.now();
+    setElapsed(0);
+    setTokens(0);
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [busy]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
@@ -251,6 +268,8 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
           const event = JSON.parse(line);
           if (event.type === "tool") {
             if (activeRef.current === id) setActivity(event.label);
+          } else if (event.type === "tokens") {
+            if (activeRef.current === id) setTokens(event.total);
           } else if (event.type === "error") throw new Error(event.message);
           else if (event.type === "done") data = event;
         }
@@ -396,6 +415,7 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
                   <div className="flex items-center gap-3 text-sm text-[#7a8196]" aria-live="polite">
                     <Sparkles size={20} className="animate-pulse text-brand" aria-hidden />
                     <span key={activity ?? "thinking"} className="chat-shimmer">{activity ? `در حال استفاده از «${activity}»…` : "در حال فکر کردن…"}</span>
+                    <span className="text-xs text-[#8b92a6]" dir="rtl">({formatElapsed(elapsed)}{tokens > 0 ? ` · ↓ ${tokens.toLocaleString("fa-IR")} توکن` : ""})</span>
                   </div>
                 )}
                 {error && <p role="alert" className="m-0 text-sm text-red-600">{error}</p>}

@@ -53,12 +53,59 @@ async function execute(def: ToolDef, rawArguments: string): Promise<{ content: s
 
 type ModelReply = { message: { content: string | null; tool_calls?: ToolCall[] }; finish: string };
 
-async function callModel(messages: ChatMessage[]): Promise<ModelReply> {
+/** Output chunks produced so far in this request (about one token each), reported while the model is still writing. */
+type OnChunks = (count: number) => void;
+
+/** Reads an OpenAI-style event stream into one reply, counting chunks as they arrive. */
+async function readStream(body: ReadableStream<Uint8Array>, onChunks?: OnChunks): Promise<ModelReply> {
+  let content = "";
+  let finish = "stop";
+  let chunks = 0;
+  const calls: ToolCall[] = [];
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    buffer += value ? decoder.decode(value, { stream: true }) : "";
+    const lines = buffer.split(String.fromCharCode(10));
+    buffer = done ? "" : (lines.pop() ?? "");
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      let chunk: { choices?: { delta?: { content?: string | null; reasoning?: string | null; reasoning_content?: string | null; tool_calls?: { index?: number; id?: string; function?: { name?: string; arguments?: string } }[] }; finish_reason?: string | null }[] };
+      try {
+        chunk = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+      const choice = chunk.choices?.[0];
+      if (!choice) continue;
+      const delta = choice.delta;
+      if (delta?.content) content += delta.content;
+      for (const part of delta?.tool_calls ?? []) {
+        const call = (calls[part.index ?? 0] ??= { id: "", type: "function", function: { name: "", arguments: "" } });
+        if (part.id) call.id = part.id;
+        if (part.function?.name) call.function.name += part.function.name;
+        if (part.function?.arguments) call.function.arguments += part.function.arguments;
+      }
+      if (delta?.content || delta?.reasoning || delta?.reasoning_content || delta?.tool_calls?.length) onChunks?.(++chunks);
+      if (choice.finish_reason) finish = choice.finish_reason;
+    }
+    if (done) break;
+  }
+  const toolCalls = calls.filter(Boolean);
+  return { message: { content, tool_calls: toolCalls.length ? toolCalls : undefined }, finish };
+}
+
+async function callModel(messages: ChatMessage[], onChunks?: OnChunks): Promise<ModelReply> {
   const response = await fetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
     headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
     // Thinking mode would require sending reasoning_content back with every tool turn; a plain tool loop is faster and cheaper.
-    body: JSON.stringify({ model: env.AI_MODEL, messages: [{ role: "system", content: SYSTEM }, ...messages], tools: apiTools(), ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}), temperature: 0.2, max_tokens: 4096 }),
+    body: JSON.stringify({ model: env.AI_MODEL, messages: [{ role: "system", content: SYSTEM }, ...messages], tools: apiTools(), ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}), temperature: 0.2, max_tokens: 4096, stream: true }),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     cache: "no-store",
   });
@@ -69,6 +116,7 @@ async function callModel(messages: ChatMessage[]): Promise<ModelReply> {
     console.error("[ai-chat] model error", response.status, (await response.text().catch(() => "")).slice(0, 300));
     throw new ApiError(502, "پاسخی از مدل دریافت نشد.");
   }
+  if (response.body && response.headers.get("content-type")?.includes("text/event-stream")) return readStream(response.body, onChunks);
   const data = (await response.json()) as { choices?: { message?: { content?: string | null; tool_calls?: ToolCall[] }; finish_reason?: string }[] };
   const choice = data.choices?.[0];
   if (!choice?.message) throw new ApiError(502, "پاسخی از مدل دریافت نشد.");
@@ -109,10 +157,13 @@ Assistant: ${replyText.slice(0, 500)}` },
 /**
  * Advances the conversation as far as it can go without the owner: calls the model, runs read tools,
  * and stops at the first write tool that has no decision yet, returning it as `pending`. It is
- * stateless: the browser sends the whole conversation back with its decisions to continue. `onTool` is told
- * the label of each tool just before it runs, so the page can show what the assistant is doing.
+ * stateless: the browser sends the whole conversation back with its decisions to continue. `hooks.onTool` is told
+ * the label of each tool just before it runs, and `hooks.onTokens` the running output-token estimate while the
+ * model writes, so the page can show what the assistant is doing.
  */
-export async function runChat(history: ChatMessage[], decisions: Record<string, Decision>, onTool?: (label: string) => void): Promise<ChatResult> {
+export async function runChat(history: ChatMessage[], decisions: Record<string, Decision>, hooks: { onTool?: (label: string) => void; onTokens?: (total: number) => void } = {}): Promise<ChatResult> {
+  const { onTool, onTokens } = hooks;
+  let tokens = 0;
   if (!ai.enabled) throw new ApiError(503, "AI_API_KEY تنظیم نشده است.");
   const messages = [...history];
 
@@ -143,7 +194,11 @@ export async function runChat(history: ChatMessage[], decisions: Record<string, 
       continue;
     }
 
-    const reply = await callModel(messages);
+    const stepStart = tokens;
+    const reply = await callModel(messages, (count) => {
+      tokens = stepStart + count;
+      onTokens?.(tokens);
+    });
     messages.push({ role: "assistant", content: reply.message.content, ...(reply.message.tool_calls ? { tool_calls: reply.message.tool_calls } : {}) });
     if (reply.finish === "content_filter") return { messages, pending: [], notice: "پاسخ توسط فیلتر مدل حذف شد." };
     if (reply.finish === "length") return { messages, pending: [], notice: "پاسخ ناقص ماند؛ درخواست را کوتاه‌تر بپرسید." };
