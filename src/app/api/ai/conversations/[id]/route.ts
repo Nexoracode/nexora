@@ -32,8 +32,15 @@ export async function PUT(request: NextRequest, { params }: Ctx) {
   const data = JSON.parse(JSON.stringify(parsed.data)) as Prisma.InputJsonObject;
   // The title comes from the first message and is set once, when the conversation is created.
   const title = conversationTitle(parsed.data.messages as ChatMessage[]);
-  const row = await db.aiConversation.upsert({ where: { id }, create: { id, title, data }, update: { data }, select: { title: true, updatedAt: true } });
-  return json(row);
+  const save = () => db.aiConversation.upsert({ where: { id }, create: { id, title, data }, update: { data }, select: { title: true, updatedAt: true } });
+  try {
+    return json(await save());
+  } catch (error) {
+    // Prisma's upsert is a read then an insert, so two saves of a brand-new conversation arriving together can both try to
+    // insert (P2002). The row exists by now, so saving again takes the update path.
+    if ((error as { code?: string }).code === "P2002") return json(await save());
+    throw error;
+  }
 }
 
 export async function DELETE(_request: NextRequest, { params }: Ctx) {

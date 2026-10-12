@@ -234,7 +234,15 @@ export function ChatApp({ enabled, ownerName }: { enabled: boolean; ownerName: s
     setList((current) => current.filter((item) => item.id !== id));
   }
 
-  async function persist(id: string, history: ChatMessage[], waiting: PendingCall[]): Promise<boolean> {
+  // Saves go one after another: two at once could race to create the same row, or an older state could land last.
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
+  function persist(id: string, history: ChatMessage[], waiting: PendingCall[]): Promise<boolean> {
+    const run = saveQueue.current.then(() => save(id, history, waiting));
+    saveQueue.current = run;
+    return run;
+  }
+
+  async function save(id: string, history: ChatMessage[], waiting: PendingCall[]): Promise<boolean> {
     try {
       const response = await fetch(`/api/ai/conversations/${id}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages: history, pending: waiting }) });
       if (!response.ok) throw new Error(String(response.status));
