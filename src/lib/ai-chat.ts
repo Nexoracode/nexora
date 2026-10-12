@@ -8,6 +8,7 @@ export type Decision = "approve" | "reject";
 export type ChatResult = { messages: ChatMessage[]; pending: PendingCall[]; notice?: string };
 
 const MAX_STEPS = 8;
+const SHOWN_AS_CARD = new Set(["get_ticket", "list_tickets"]);
 const MAX_RESULT_CHARS = 20_000;
 const REQUEST_TIMEOUT_MS = 50_000;
 
@@ -15,9 +16,9 @@ const SYSTEM = `You are the assistant inside the owner's panel of Nexora, a lice
 You help the owner look things up and manage sites, wallets, the feature catalog, packages, purchase requests, wallet top-ups and support tickets, using your tools.
 
 Rules:
-- Reply in Persian, briefly and plainly. Amounts are in toman; format them with thousands separators.
+- Reply in Persian, briefly and plainly. Answer only what was asked; no preamble, no recap, no offers of further help. Amounts are in toman; format them with thousands separators.
 - Format replies in Markdown: short paragraphs, bullet or numbered lists for several items, **bold** for key values, and a table for lists of records with several fields. Never put a whole answer on one line.
-- The page shows a card for every ticket you read with get_ticket (details and the whole conversation) and for every list_tickets result. Do not repeat that content: no table of its fields, no copy of its messages. Add only a short comment, a summary or what you suggest.
+- The page shows a card for every ticket you read with get_ticket (details and the whole conversation) and for every list_tickets result. After such a tool, write nothing that repeats the card: no table of its fields, no list, no copy of its messages. At most one short sentence (a comment or a suggestion); if the card already answers the question, write nothing.
 - Write a status or priority exactly as its raw uppercase value (OPEN, ANSWERED, PENDING, APPROVED, ACTIVE, URGENT...), never translated: the page turns each one into a coloured Persian label.
 - Never invent ids, keys or numbers. Look them up with the read tools first.
 - Read tools run immediately. Write tools do not run until the owner approves them on a card in the chat, so call a write tool only when the owner clearly asked for that change, once per change, and say in one sentence what it will do and why. Do not ask "are you sure?" in text; the approval card is the confirmation.
@@ -44,7 +45,10 @@ async function execute(def: ToolDef, rawArguments: string): Promise<{ content: s
   // The JSON round trip drops arguments the model left undefined, as a real request body would.
   const body = req.body === undefined ? null : JSON.parse(JSON.stringify(req.body));
   try {
-    const text = JSON.stringify(await found.route.handler({ params: found.params, query, body }));
+    const result = await found.route.handler({ params: found.params, query, body });
+    // The page draws these results as cards, so the model is told, right where it reads them, not to say them again.
+    const shown = SHOWN_AS_CARD.has(def.name) && result && typeof result === "object" ? { ...result, note_to_assistant: "The owner already sees this as a card on the page. Do not repeat or list any of it. Reply with one short sentence at most, or nothing if there is nothing to add." } : result;
+    const text = JSON.stringify(shown);
     return { content: text.length > MAX_RESULT_CHARS ? `${text.slice(0, MAX_RESULT_CHARS)} …(truncated; narrow the query)` : text, isError: false };
   } catch (error) {
     if (error instanceof ApiError) return { content: `Error: ${error.message}`, isError: true };
@@ -107,7 +111,7 @@ async function callModel(messages: ChatMessage[], onChunks?: OnChunks): Promise<
     method: "POST",
     headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
     // Thinking mode would require sending reasoning_content back with every tool turn; a plain tool loop is faster and cheaper.
-    body: JSON.stringify({ model: env.AI_MODEL, messages: [{ role: "system", content: SYSTEM }, ...messages], tools: apiTools(), ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}), temperature: 0.2, max_tokens: 4096, stream: true }),
+    body: JSON.stringify({ model: env.AI_MODEL, messages: [{ role: "system", content: SYSTEM }, ...messages.map((m) => (m.role === "assistant" && !m.content && !m.tool_calls ? { ...m, content: "-" } : m))], tools: apiTools(), ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}), temperature: 0.2, max_tokens: 4096, stream: true }),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     cache: "no-store",
   });

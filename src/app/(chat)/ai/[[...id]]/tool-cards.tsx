@@ -52,7 +52,7 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
         </p>
       </header>
 
-      <div className="space-y-5 p-5">
+      <div className="flex flex-col gap-5 p-5">
         {(ticket.messages ?? []).map((message, index) => (
           // A quote: a solid vertical line down the whole message, brand-coloured for the owner and grey for the customer.
           <blockquote key={index} className="m-0 flex gap-3.5">
