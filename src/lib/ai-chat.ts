@@ -8,6 +8,7 @@ export type Decision = "approve" | "reject";
 export type ChatResult = { messages: ChatMessage[]; pending: PendingCall[]; notice?: string };
 
 const MAX_STEPS = 8;
+const RATE_LIMIT_RETRIES = 4;
 const SHOWN_AS_CARD = new Set(["nexora_summary", "list_sites", "get_site", "site_wallet", "list_features", "list_packages", "list_purchases", "list_topups", "list_ratings", "get_ticket", "list_tickets"]);
 const MAX_RESULT_CHARS = 20_000;
 const REQUEST_TIMEOUT_MS = 50_000;
@@ -108,14 +109,24 @@ async function readStream(body: ReadableStream<Uint8Array>, onChunks?: OnChunks)
 }
 
 async function callModel(messages: ChatMessage[], onChunks?: OnChunks): Promise<ModelReply> {
-  const response = await fetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
-    // Thinking mode would require sending reasoning_content back with every tool turn; a plain tool loop is faster and cheaper.
-    body: JSON.stringify({ model: env.AI_MODEL, messages: [{ role: "system", content: SYSTEM }, ...messages.map((m) => (m.role === "assistant" && !m.content && !m.tool_calls ? { ...m, content: "-" } : m))], tools: apiTools(), ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}), temperature: 0.2, max_tokens: 4096, stream: true }),
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    cache: "no-store",
-  });
+  // Thinking mode would require sending reasoning_content back with every tool turn; a plain tool loop is faster and cheaper.
+  const body = JSON.stringify({ model: env.AI_MODEL, messages: [{ role: "system", content: SYSTEM }, ...messages.map((m) => (m.role === "assistant" && !m.content && !m.tool_calls ? { ...m, content: "-" } : m))], tools: apiTools(), ...(ai.deepseek ? { thinking: { type: "disabled" } } : {}), temperature: 0.2, max_tokens: 4096, stream: true });
+  let response: Response;
+  // A 429 arrives before any output, so it is safe to wait (honouring Retry-After) and send the same request again.
+  for (let attempt = 0; ; attempt++) {
+    response = await fetch(`${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
+      body,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      cache: "no-store",
+    });
+    if (response.status !== 429 || attempt >= RATE_LIMIT_RETRIES) break;
+    const retryAfter = Number(response.headers.get("retry-after"));
+    const waitMs = Math.min(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 2000 * 2 ** attempt, 15_000);
+    await response.body?.cancel().catch(() => {});
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+  }
   if (response.status === 401 || response.status === 403) throw new ApiError(502, "کلید API مدل (AI_API_KEY) معتبر نیست.");
   if (response.status === 402) throw new ApiError(502, "اعتبار یا سهمیهٔ حساب مدل تمام شده است.");
   if (response.status === 429) throw new ApiError(429, "محدودیت درخواست مدل؛ کمی بعد دوباره تلاش کنید.");
