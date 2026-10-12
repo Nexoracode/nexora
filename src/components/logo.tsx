@@ -16,7 +16,8 @@ export function Logo({ size = 28, spinning = false, ringInset = 34, className = 
         className={`logo-ring pointer-events-none absolute rounded-full transition-opacity duration-300 ${spinning ? "opacity-100" : "opacity-0"}`}
         style={{
           inset: `${-ringInset}%`,
-          background: "conic-gradient(from 0deg, transparent 0deg 170deg, #22e8ff 205deg, #2f86ff 260deg, #5a64ff 310deg, #a45bff 358deg, transparent 360deg)",
+          // --ring-tail is where the arc starts (170deg = a 190deg arc); the loading screen animates it up to 360deg to eat the ring away.
+          background: "conic-gradient(from 0deg, transparent 0deg, transparent var(--ring-tail, 170deg), #22e8ff calc(var(--ring-tail, 170deg) + (360deg - var(--ring-tail, 170deg)) * 0.18), #2f86ff calc(var(--ring-tail, 170deg) + (360deg - var(--ring-tail, 170deg)) * 0.47), #5a64ff calc(var(--ring-tail, 170deg) + (360deg - var(--ring-tail, 170deg)) * 0.74), #a45bff calc(var(--ring-tail, 170deg) + (360deg - var(--ring-tail, 170deg)) * 0.99), transparent 360deg)",
           WebkitMaskImage: ring,
           maskImage: ring,
           animationPlayState: spinning ? "running" : "paused",
