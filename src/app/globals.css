@@ -200,8 +200,8 @@ button.input {
   -webkit-background-clip: text;
   background-clip: text;
   animation:
-    brand-letter-out 0.9s cubic-bezier(0.22, 0.9, 0.3, 1.12) calc(1.55s + var(--i) * 0.11s) both,
-    brand-sweep 2.2s ease-in-out 3.2s infinite;
+    brand-letter-out 0.9s cubic-bezier(0.22, 0.9, 0.3, 1.12) calc(1s + var(--i) * 0.11s) both,
+    brand-sweep 2.2s ease-in-out 2.55s infinite;
 }
 
 /* The N waits alone in the middle for a moment, then glides smoothly to its place on the left. */
