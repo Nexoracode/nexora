@@ -8,9 +8,9 @@ export function BrandLoader({ size = 44, label = "در حال آماده‌سا�
   return (
     <div role="status" aria-live="polite" className="flex flex-col items-center gap-5">
       {/* The wordmark is Latin, so it reads left to right whatever the page direction is. */}
-      <div dir="ltr" className="flex items-center" style={{ gap: size * 0.2 }}>
-        <Logo size={size} spinning ringInset={20} />
-        <span aria-hidden className="brand-wordmark select-none font-extrabold uppercase leading-none" style={{ fontSize: size * 1.18, letterSpacing: size * 0.02 }}>
+      <div dir="ltr" className="flex items-center" style={{ gap: size * 0.42 }}>
+        <Logo size={size} spinning ringInset={34} />
+        <span aria-hidden className="brand-wordmark select-none uppercase leading-none" style={{ fontSize: size * 1.12, letterSpacing: size * 0.02 }}>
           EXORA
         </span>
         <span className="sr-only">Nexora</span>
