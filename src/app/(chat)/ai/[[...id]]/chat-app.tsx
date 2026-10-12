@@ -113,7 +113,13 @@ function Composer({ text, setText, onSubmit, disabled, busy, placeholder, inputR
   );
 }
 
-export function ChatApp({ enabled }: { enabled: boolean }) {
+/** The greeting for the hour of the day in the viewer's own time zone. */
+function greeting(hour: number, name: string | null) {
+  const part = hour >= 5 && hour < 12 ? "صبح" : hour >= 12 && hour < 16 ? "ظهر" : hour >= 16 && hour < 19 ? "عصر" : "شب";
+  return `${name ? `سلام ${name}، ` : "سلام، "}${part} بخیر`;
+}
+
+export function ChatApp({ enabled, ownerName }: { enabled: boolean; ownerName: string | null }) {
   const [list, setList] = useState<Summary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -126,6 +132,9 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sidebar, setSidebar] = useState(false);
+  // Known only in the browser (its clock), so it is filled in after the first render.
+  const [hello, setHello] = useState<string | null>(null);
+  useEffect(() => setHello(greeting(new Date().getHours(), ownerName)), [ownerName, messages.length]);
   const activeRef = useRef<string | null>(null);
   const titled = useRef(new Set<string>());
   const endRef = useRef<HTMLDivElement>(null);
@@ -391,7 +400,8 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
         {empty ? (
           <div className="flex flex-1 flex-col items-center justify-center px-4 pb-16">
             <div className="w-full max-w-4xl">
-              <h1 className="mb-8 flex items-center justify-center gap-3 text-3xl font-medium"><Logo size={40} />چطور می‌توانم کمکتان کنم؟</h1>
+              <h1 className="m-0 flex items-center justify-center gap-3 text-3xl font-medium"><Logo size={40} /><span className={hello ? "" : "invisible"}>{hello ?? "سلام"}</span></h1>
+              <p className="mb-8 mt-3 text-center text-base text-[#7a8196]">چطور می‌توانم کمکتان کنم؟</p>
               <Composer text={text} setText={setText} onSubmit={() => submit()} disabled={false} busy={busy} placeholder={placeholder} inputRef={inputRef} />
               {error && <p role="alert" className="mt-3 text-center text-sm text-red-600">{error}</p>}
               <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -431,7 +441,7 @@ export function ChatApp({ enabled }: { enabled: boolean }) {
 
                 {busy && (
                   <div className="flex items-center gap-3 text-sm text-[#7a8196]" aria-live="polite">
-                    <Logo size={20} spinning className="m-1.5" />
+                    <Logo size={16} spinning className="m-1" />
                     <span key={activity ?? "thinking"} className="chat-shimmer">{activity ? `در حال استفاده از «${activity}»…` : "در حال فکر کردن…"}</span>
                     <span className="text-xs text-[#8b92a6]" dir="rtl">({formatElapsed(elapsed)}{tokens > 0 ? ` · ↓ ${tokens.toLocaleString("fa-IR")} توکن` : ""})</span>
                   </div>

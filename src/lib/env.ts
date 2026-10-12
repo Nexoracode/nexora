@@ -13,6 +13,8 @@ const schema = z.object({
   AI_API_KEY: z.preprocess((value) => (value === "" ? undefined : value), z.string().min(3).optional()),
   AI_MODEL: z.string().min(1).default("deepseek-flash"),
   AI_BASE_URL: z.url().default("https://api.deepseek.com"),
+  // The owner's first name, used to greet them on the assistant page ("سلام محمد، شب بخیر"). Unset greets without a name.
+  OWNER_NAME: z.preprocess((value) => (value === "" ? undefined : value), z.string().max(40).optional()),
   LICENSE_PRIVATE_KEY: z.string().default(""),
   LICENSE_TOKEN_DAYS: z.coerce.number().int().min(1).max(90).default(7),
   // Zarinpal merchant id for the "pay online" option. Unset means online payment is off. The gateway runs in
