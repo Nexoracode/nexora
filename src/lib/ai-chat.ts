@@ -112,48 +112,57 @@ async function readStream(body: ReadableStream<Uint8Array>, onChunks?: OnChunks)
   return { message: { content, tool_calls: toolCalls.length ? toolCalls : undefined }, finish };
 }
 
-/** Statuses that mean "this model cannot answer right now": rate limited, overloaded or gone. The next model is tried instead. */
+/** Statuses that mean "this model (with this key) cannot answer right now": rate limited, overloaded or gone. The next one is tried instead. */
 const SWITCH_STATUSES = new Set([429, 503, 404]);
 const cooldownUntil = new Map<string, number>();
 export const resetModelCooldowns = () => cooldownUntil.clear();
 
 /**
- * Sends one chat request. If the model is rate limited (or overloaded / retired) the next model of AI_FALLBACK_MODELS is
- * used straight away, so the owner gets an answer instead of an error; a model that just failed is skipped for a while.
- * Only when every model is busy does it wait (honouring Retry-After) and go round again. Such statuses arrive before any
- * output, so re-sending is safe.
+ * Sends one chat request. If a model is rate limited (or overloaded / retired) with the current key, the next KEY is
+ * tried on the same model first (AI_API_KEYS), then the next model of AI_FALLBACK_MODELS, straight away, so the owner gets
+ * an answer instead of an error. A pair that just failed is skipped for a while (Retry-After, else 20s / 60s; a key the
+ * provider rejects with 401 for 10 minutes). Only when every pair is busy does it wait and go round again. Such statuses
+ * arrive before any output, so re-sending is safe.
  */
 async function requestModel(makeBody: (model: string) => string, timeoutMs: number, onSwitch?: (model: string) => void, deadline = Infinity): Promise<{ response: Response; model: string }> {
   const url = `${env.AI_BASE_URL.replace(/\/$/, "")}/chat/completions`;
+  const keys: (string | undefined)[] = ai.keys.length ? ai.keys : [undefined]; // a local endpoint has no key
+  // Model-major: every key of the best model before dropping to a weaker model.
+  const pairs = ai.models.flatMap((model) => keys.map((key, keyIndex) => ({ model, key, id: `${model} ${keyIndex}` })));
   let last: { response: Response; model: string } | undefined;
   for (let round = 0; round <= RATE_LIMIT_RETRIES; round++) {
     const now = Date.now();
-    const ready = ai.models.filter((m) => (cooldownUntil.get(m) ?? 0) <= now);
-    // When every model is cooling down, still try the one that frees up first.
-    const candidates = ready.length ? ready : [[...ai.models].sort((x, y) => (cooldownUntil.get(x) ?? 0) - (cooldownUntil.get(y) ?? 0))[0]];
+    const ready = pairs.filter((p) => (cooldownUntil.get(p.id) ?? 0) <= now);
+    // When everything is cooling down, still try the pair that frees up first.
+    const candidates = ready.length ? ready : [[...pairs].sort((x, y) => (cooldownUntil.get(x.id) ?? 0) - (cooldownUntil.get(y.id) ?? 0))[0]];
     let waitMs = 2000 * 2 ** round;
-    for (const model of candidates) {
+    for (const { model, key, id } of candidates) {
+      if ((cooldownUntil.get(id) ?? 0) > Date.now() && !(candidates.length === 1)) continue; // retired model: skip its other keys
       const remaining = deadline - Date.now();
       // Out of time: keep what we have rather than start something the host would cut off.
       if (remaining < 4000 && last) break;
       const response = await modelFetch(url, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(ai.key ? { authorization: `Bearer ${ai.key}` } : {}) },
+        headers: { "content-type": "application/json", ...(key ? { authorization: `Bearer ${key}` } : {}) },
         body: makeBody(model),
         signal: AbortSignal.timeout(Math.max(1000, Math.min(timeoutMs, remaining))),
         cache: "no-store",
       });
-      if (!SWITCH_STATUSES.has(response.status)) {
+      const badKey = response.status === 401 && keys.length > 1;
+      if (!SWITCH_STATUSES.has(response.status) && !badKey) {
         if (model !== ai.models[0]) onSwitch?.(model);
         return { response, model };
       }
       const retryAfter = Number(response.headers.get("retry-after"));
-      const coolMs = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : response.status === 429 ? 20_000 : 60_000;
-      cooldownUntil.set(model, Date.now() + Math.min(coolMs, 120_000));
+      const coolMs = badKey ? 600_000 : Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : response.status === 429 ? 20_000 : 60_000;
+      const until = Date.now() + Math.min(coolMs, 600_000);
+      // A retired model (404) is gone for every key; a limit or a bad key only for this one.
+      for (const p of pairs) if (p.id === id || (response.status === 404 && p.model === model)) cooldownUntil.set(p.id, until);
       waitMs = Math.min(Math.max(coolMs, 1000), 15_000);
       await last?.response.body?.cancel().catch(() => {});
       last = { response, model };
-      console.warn("[ai-chat] model unavailable", model, response.status, ai.models.length > 1 ? "- trying the next one" : "");
+      // Never log the key itself, only which of them it was.
+      console.warn("[ai-chat] unavailable:", model, `key #${keys.indexOf(key) + 1}`, response.status, pairs.length > 1 ? "- trying the next" : "");
     }
     if (round === RATE_LIMIT_RETRIES || Date.now() + waitMs > deadline - 4000) break;
     await new Promise((resolve) => setTimeout(resolve, waitMs));

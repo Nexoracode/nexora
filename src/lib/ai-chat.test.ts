@@ -9,6 +9,7 @@ Object.assign(process.env, {
   SESSION_SECRET: "s".repeat(40),
   DEEPSEEK_API_KEY: "test-key-123456",
   AI_FALLBACK_MODELS: "backup-model-1, backup-model-2",
+  AI_API_KEYS: "test-key-bbbbbb, test-key-cccccc",
 });
 const { runChat, resetModelCooldowns } = await import("./ai-chat");
 
@@ -95,7 +96,7 @@ test("a rate-limited model is replaced by the next one and skipped while it cool
   const switched: string[] = [];
   const first = await runChat(ask, {}, { onSwitch: (model) => switched.push(model) });
   assert.equal(first.messages.at(-1)?.content, "ok");
-  assert.deepEqual(called, ["deepseek-flash", "backup-model-1"]);
+  assert.deepEqual(called, ["deepseek-flash", "deepseek-flash", "deepseek-flash", "backup-model-1"], "all three keys of the main model are tried before a weaker model");
   assert.deepEqual(switched, ["backup-model-1"]);
 
   called.length = 0;
@@ -109,6 +110,43 @@ test("the chain goes on when a backup is limited too, and a retired model (404) 
   const called = modelsThatFail({ "deepseek-flash": 404, "backup-model-1": 429 });
   const result = await runChat(ask, {});
   assert.equal(result.messages.at(-1)?.content, "ok");
-  assert.deepEqual(called, ["deepseek-flash", "backup-model-1", "backup-model-2"]);
+  assert.deepEqual(called, ["deepseek-flash", "backup-model-1", "backup-model-1", "backup-model-1", "backup-model-2"], "a retired model (404) is dropped for every key at once");
+  resetModelCooldowns();
+});
+
+test("a rate-limited key hands over to the next key on the same model before any weaker model is used", async () => {
+  resetModelCooldowns();
+  const calls: string[] = [];
+  globalThis.fetch = (async (_url: unknown, init: RequestInit) => {
+    const model = JSON.parse(String(init.body)).model as string;
+    const auth = (init.headers as Record<string, string>).authorization;
+    calls.push(`${model}|${auth}`);
+    if (auth === "Bearer test-key-123456" || auth === "Bearer test-key-bbbbbb") return new Response("{}", { status: 429, headers: { "retry-after": "30" } });
+    return new Response(JSON.stringify({ choices: [{ message: { content: "ok" }, finish_reason: "stop" }] }), { status: 200 });
+  }) as typeof fetch;
+  const switched: string[] = [];
+  const result = await runChat(ask, {}, { onSwitch: (model) => switched.push(model) });
+  assert.equal(result.messages.at(-1)?.content, "ok");
+  assert.deepEqual(calls, ["deepseek-flash|Bearer test-key-123456", "deepseek-flash|Bearer test-key-bbbbbb", "deepseek-flash|Bearer test-key-cccccc"]);
+  assert.deepEqual(switched, [], "the main model answered, so no model switch is reported");
+
+  calls.length = 0;
+  await runChat(ask, {});
+  assert.deepEqual(calls, ["deepseek-flash|Bearer test-key-cccccc"], "keys that just failed are skipped while they cool down");
+  resetModelCooldowns();
+});
+
+test("a key the provider rejects (401) is skipped for the others", async () => {
+  resetModelCooldowns();
+  const calls: string[] = [];
+  globalThis.fetch = (async (_url: unknown, init: RequestInit) => {
+    const auth = (init.headers as Record<string, string>).authorization;
+    calls.push(auth);
+    if (auth === "Bearer test-key-123456") return new Response("{}", { status: 401 });
+    return new Response(JSON.stringify({ choices: [{ message: { content: "ok" }, finish_reason: "stop" }] }), { status: 200 });
+  }) as typeof fetch;
+  const result = await runChat(ask, {});
+  assert.equal(result.messages.at(-1)?.content, "ok");
+  assert.deepEqual(calls, ["Bearer test-key-123456", "Bearer test-key-bbbbbb"]);
   resetModelCooldowns();
 });

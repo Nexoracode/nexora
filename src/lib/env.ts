@@ -17,6 +17,8 @@ const schema = z.object({
   AI_PROXY_URL: z.preprocess((value) => (value === "" ? undefined : value), z.url().optional()),
   // Other chat models to try, in order, when the main one is rate-limited or unavailable (comma separated, same provider).
   AI_FALLBACK_MODELS: z.string().default(""),
+  // More API keys for the same provider (comma separated), used in turn when the first one hits its rate limit.
+  AI_API_KEYS: z.string().default(""),
   AI_BASE_URL: z.url().default("https://api.deepseek.com"),
   // The owner's first name, used to greet them on the assistant page ("سلام محمد، شب بخیر"). Unset greets without a name.
   OWNER_NAME: z.preprocess((value) => (value === "" ? undefined : value), z.string().max(40).optional()),
@@ -37,9 +39,12 @@ export const env = schema.parse(process.env);
 const aiKey = env.AI_API_KEY ?? env.DEEPSEEK_API_KEY;
 const aiHost = new URL(env.AI_BASE_URL).hostname;
 const aiLocal = ["localhost", "127.0.0.1", "[::1]"].includes(aiHost);
+const aiKeys = [aiKey, ...env.AI_API_KEYS.split(",")].map((k) => k?.trim()).filter((k): k is string => Boolean(k)).filter((k, i, all) => all.indexOf(k) === i);
 export const ai = {
-  key: aiKey,
-  enabled: Boolean(aiKey) || aiLocal,
+  /** The first key, then the extra ones; empty for a local endpoint. */
+  keys: aiKeys,
+  key: aiKeys[0],
+  enabled: aiKeys.length > 0 || aiLocal,
   /** The main model first, then the fallbacks. */
   models: [env.AI_MODEL, ...env.AI_FALLBACK_MODELS.split(",").map((m) => m.trim()).filter(Boolean)].filter((m, i, all) => all.indexOf(m) === i),
   /** Only DeepSeek understands the `thinking` switch; other providers reject unknown fields. */
